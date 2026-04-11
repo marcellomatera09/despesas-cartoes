@@ -1,206 +1,520 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controle de Despesas</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}:root{--inter:#FF6B00;--amex:#999999;--gray-50:#F9F9F9;--gray-100:#EEEEEE;--gray-300:#CCCCCC;--gray-500:#888888;--gray-700:#555555;--gray-900:#1A1A1A;--sidebar-bg:#1F1F1F;--sidebar-text:#D8D6D0;--border:#E0E0E0;--text:#1A1A1A;--text-light:#777777}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--gray-50);color:var(--text);font-size:13px}.login-container{display:none;width:100%;height:100vh;background:linear-gradient(135deg,#000 0%,#333 100%);align-items:center;justify-content:center;position:fixed;top:0;left:0;z-index:10000}.login-container.active{display:flex}.login-box{background:white;padding:32px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.2);width:100%;max-width:360px}.login-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}.login-subtitle{font-size:12px;color:var(--text-light);margin-bottom:20px}.form-field{margin-bottom:12px}.form-field label{display:block;font-size:11px;font-weight:600;margin-bottom:4px;color:var(--text);text-transform:uppercase}.form-field input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;color:var(--text)}.form-field input:focus{outline:0;border-color:var(--text);box-shadow:0 0 0 2px var(--gray-100)}.login-button{width:100%;padding:8px;background:var(--text);color:white;border:0;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px}.login-button:hover{background:var(--gray-700)}.login-button.secondary{background:var(--gray-700)}.login-button.secondary:hover{background:var(--gray-500)}.layout{display:flex;height:100vh}.layout.hidden{display:none}.sidebar{width:200px;background:var(--sidebar-bg);color:var(--sidebar-text);display:flex;flex-direction:column;overflow-y:auto;border-right:1px solid rgba(255,255,255,.05);font-size:12px}.sidebar-logo{padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}.sidebar-logo h1{font-size:13px;font-weight:700;margin-bottom:2px}.sidebar-logo p{font-size:10px;opacity:.6}.sidebar-nav{flex:1;padding:12px 0}.sidebar-section{margin-bottom:12px}.sidebar-section-title{font-size:10px;font-weight:700;text-transform:uppercase;opacity:.5;padding:0 12px 6px}.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;color:var(--sidebar-text);cursor:pointer;border-left:2px solid transparent;transition:all .2s;font-size:12px;justify-content:space-between}.nav-item:hover{background:rgba(255,255,255,.05)}.nav-item.active{background:rgba(255,255,255,.08);border-left-color:#FFF;font-weight:600}.nav-item.inter.active{border-left-color:var(--inter);background:rgba(255,107,0,.1)}.nav-item.amex.active{border-left-color:var(--amex);background:rgba(153,153,153,.1)}.nav-icon{font-size:14px;min-width:14px;font-weight:700}.nav-wrapper{display:flex;align-items:center;gap:8px;flex:1}.edit-btn{background:0;border:0;color:var(--sidebar-text);cursor:pointer;font-size:12px;opacity:.6;padding:0 4px}.sidebar-user{padding:8px 12px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px}.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}.user-info{flex:1;min-width:0}.user-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.user-role{font-size:9px;opacity:.6}.main-content{flex:1;display:flex;flex-direction:column}.header{background:white;padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.header h1{font-size:16px;font-weight:600;color:var(--text)}.header-right{font-size:10px;color:var(--text);background:var(--gray-100);padding:3px 6px;border-radius:3px;font-weight:600}.content{flex:1;overflow-y:auto;padding:16px}.card{background:white;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px}.card-title{font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)}.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.stat-card{background:var(--gray-50);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center}.stat-label{font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:4px}.stat-value{font-size:16px;font-weight:700;color:var(--text)}.btn{padding:6px 12px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;background:white;color:var(--text);text-transform:uppercase}.btn:hover{background:var(--gray-50)}.btn-primary{background:var(--text);color:white;border-color:var(--text)}.btn-primary:hover{background:var(--gray-700)}.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center}.modal.active{display:flex}.modal-content{background:white;border-radius:6px;padding:16px;max-width:400px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,.15)}.modal-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text)}.modal-footer{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}.info-box{background:var(--gray-50);border-left:3px solid var(--text);padding:8px 10px;border-radius:3px;font-size:11px;color:var(--text-light);margin-bottom:12px}.pessoas-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pessoa-tag{background:var(--gray-100);color:var(--text);padding:4px 8px;border-radius:12px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:4px}.pessoa-tag button{background:0;border:0;color:var(--text);cursor:pointer;font-size:12px;padding:0}@media (max-width:768px){.sidebar{width:60px}.sidebar-logo p,.nav-wrapper>span:not(.nav-icon),.sidebar-section-title,.user-info,.edit-btn{display:none}.stat-grid{grid-template-columns:1fr 1fr}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Despesas</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing:border-box
+    }
+
+    :root {
+        --inter: #FF6B00;
+        --amex: #999999;
+        --gray-50: #F9F9F9;
+        --gray-100: #EEEEEE;
+        --gray-300: #CCCCCC;
+        --gray-500: #888888;
+        --gray-700: #555555;
+        --gray-900: #1A1A1A;
+        --sidebar-bg: #1F1F1F;
+        --sidebar-text: #D8D6D0;
+        --border: #E0E0E0;
+        --text: #1A1A1A;
+        --text-light:#777777
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--gray-50);
+        color: var(--text);
+        font-size:13px
+    }
+
+    .login-container {
+        display: none;
+        width: 100%;
+        height: 100vh;
+        background: linear-gradient(135deg, #000 0%, #333 100%);
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index:10000
+    }
+
+    .login-container.active {
+        display:flex
+    }
+
+    .login-box {
+        background: white;
+        padding: 32px;
+        border-radius: 8px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, .2);
+        width: 100%;
+        max-width:360px
+    }
+
+    .login-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom:4px
+    }
+
+    .login-subtitle {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom:20px
+    }
+
+    .form-field {
+        margin-bottom:12px
+    }
+
+    .form-field label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: var(--text);
+        text-transform:uppercase
+    }
+
+    .form-field input {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        font-size: 12px;
+        font-family: inherit;
+        color:var(--text)
+    }
+
+    .form-field input:focus {
+        outline: 0;
+        border-color: var(--text);
+        box-shadow:0 0 0 2px var(--gray-100)
+    }
+
+    .login-button {
+        width: 100%;
+        padding: 8px;
+        background: var(--text);
+        color: white;
+        border: 0;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom:8px
+    }
+
+    .login-button:hover {
+        background:var(--gray-700)
+    }
+
+    .login-button.secondary {
+        background:var(--gray-700)
+    }
+
+    .login-button.secondary:hover {
+        background:var(--gray-500)
+    }
+
+    .layout {
+        display: flex;
+        height:100vh
+    }
+
+    .layout.hidden {
+        display:none
+    }
+
+    .sidebar {
+        width: 200px;
+        background: var(--sidebar-bg);
+        color: var(--sidebar-text);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        border-right: 1px solid rgba(255, 255, 255, .05);
+        font-size:12px
+    }
+
+    .sidebar-logo {
+        padding: 12px;
+        border-bottom:1px solid rgba(255, 255, 255, .08)
+    }
+
+    .sidebar-logo h1 {
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom:2px
+    }
+
+    .sidebar-logo p {
+        font-size: 10px;
+        opacity:.6
+    }
+
+    .sidebar-nav {
+        flex: 1;
+        padding:12px 0
+    }
+
+    .sidebar-section {
+        margin-bottom:12px
+    }
+
+    .sidebar-section-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        opacity: .5;
+        padding:0 12px 6px
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        color: var(--sidebar-text);
+        cursor: pointer;
+        border-left: 2px solid transparent;
+        transition: all .2s;
+        font-size: 12px;
+        justify-content:space-between
+    }
+
+    .nav-item:hover {
+        background:rgba(255, 255, 255, .05)
+    }
+
+    .nav-item.active {
+        background: rgba(255, 255, 255, .08);
+        border-left-color: #FFF;
+        font-weight:600
+    }
+
+    .nav-item.inter.active {
+        border-left-color: var(--inter);
+        background:rgba(255, 107, 0, .1)
+    }
+
+    .nav-item.amex.active {
+        border-left-color: var(--amex);
+        background:rgba(153, 153, 153, .1)
+    }
+
+    .nav-icon {
+        font-size: 14px;
+        min-width: 14px;
+        font-weight:700
+    }
+
+    .nav-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex:1
+    }
+
+    .sidebar-user {
+        padding: 8px 12px;
+        border-top: 1px solid rgba(255, 255, 255, .08);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size:11px
+    }
+
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--text);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight:700
+    }
+
+    .user-info {
+        flex: 1;
+        min-width:0
+    }
+
+    .user-name {
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow:ellipsis
+    }
+
+    .user-role {
+        font-size: 9px;
+        opacity:.6
+    }
+
+    .main-content {
+        flex: 1;
+        display: flex;
+        flex-direction:column
+    }
+
+    .header {
+        background: white;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items:center
+    }
+
+    .header h1 {
+        font-size: 16px;
+        font-weight: 600;
+        color:var(--text)
+    }
+
+    .header-right {
+        font-size: 10px;
+        color: var(--text);
+        background: var(--gray-100);
+        padding: 3px 6px;
+        border-radius: 3px;
+        font-weight:600
+    }
+
+    .content {
+        flex: 1;
+        overflow-y: auto;
+        padding:16px
+    }
+
+    .card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom:12px
+    }
+
+    .card-title {
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color:var(--text)
+    }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap:10px
+    }
+
+    .stat-card {
+        background: var(--gray-50);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 10px;
+        text-align:center
+    }
+
+    .stat-label {
+        font-size: 10px;
+        color: var(--text-light);
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom:4px
+    }
+
+    .stat-value {
+        font-size: 16px;
+        font-weight: 700;
+        color:var(--text)
+    }
+
+    @media (max-width: 768px) {
+        .sidebar {
+            width:60px
+        }
+
+        .sidebar-logo p, .nav-wrapper > span:not(.nav-icon), .sidebar-section-title, .user-info {
+            display:none
+        }
+
+        .stat-grid {
+            grid-template-columns: 1fr 1fr
+        }
+    }
+    </style>
 </head>
 <body>
-  <div id="loginPage" class="login-container active">
-    <div class="login-box">
-      <h2 class="login-title">Despesas</h2>
-      <p class="login-subtitle">Controle de Cartões</p>
-      
-      <div class="form-field">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="seu@email.com">
-      </div>
-      <div class="form-field">
-        <label>Senha</label>
-        <input type="password" id="password" placeholder="sua senha">
-      </div>
+    <div id="loginPage" class="login-container active">
+        <div class="login-box">
+            <h2 class="login-title">Despesas</h2>
+            <p class="login-subtitle">Controle de Cartões</p>
 
-      <button class="login-button" onclick="fazerLogin()">Entrar</button>
-      <button class="login-button secondary" onclick="fazerSignup()">Criar Conta</button>
-    </div>
-  </div>
+            <div class="form-field">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="seu@email.com">
+            </div>
+            <div class="form-field">
+                <label>Senha</label>
+                <input type="password" id="password" placeholder="sua senha">
+            </div>
 
-  <div id="mainLayout" class="layout hidden">
-    <div class="sidebar">
-      <div class="sidebar-logo">
-        <h1>Despesas</h1>
-        <p>Cartões</p>
-      </div>
-      <div class="sidebar-nav">
-        <div class="sidebar-section">
-          <div class="sidebar-section-title">Cartões</div>
-          <div class="nav-item inter active" onclick="selecionarCartao('inter')">
-            <div class="nav-wrapper"><span class="nav-icon" style="color:var(--inter)">■</span><span>Inter</span></div>
-          </div>
-          <div class="nav-item amex" onclick="selecionarCartao('amex')">
-            <div class="nav-wrapper"><span class="nav-icon" style="color:var(--amex)">■</span><span>AMEX</span></div>
-          </div>
+            <button type="button" class="login-button" onclick="fazerLogin()">Entrar</button>
+            <button type="button" class="login-button secondary" onclick="fazerSignup()">Criar Conta</button>
         </div>
-        <div class="sidebar-section">
-          <div class="sidebar-section-title">Meses</div>
-          <div id="mesesList"></div>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-section-title">Menu</div>
-          <div class="nav-item" onclick="abrirNovaTransacao()">
-            <div class="nav-wrapper"><span class="nav-icon">➕</span><span>Nova</span></div>
-          </div>
-          <div class="nav-item" onclick="abrirPessoas()">
-            <div class="nav-wrapper"><span class="nav-icon">👥</span><span>Pessoas</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="sidebar-user" onclick="fazerLogout()">
-        <div class="user-avatar">M</div>
-        <div class="user-info">
-          <div class="user-name" id="userEmail">Usuário</div>
-          <div class="user-role">Sair</div>
-        </div>
-      </div>
     </div>
 
-    <div class="main-content">
-      <div class="header">
-        <h1 id="headerTitle">Dashboard</h1>
-        <div class="header-right">v2.0</div>
-      </div>
-      <div class="content" id="mainContent"></div>
-    </div>
-  </div>
+    <div id="mainLayout" class="layout hidden">
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <h1>Despesas</h1>
+                <p>Cartões</p>
+            </div>
+            <div class="sidebar-nav">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Cartões</div>
+                    <div class="nav-item inter active">
+                        <div class="nav-wrapper">
+                            <span class="nav-icon" style="color:var(--inter)">■</span>
+                            <span>Inter</span>
+                        </div>
+                    </div>
+                    <div class="nav-item amex">
+                        <div class="nav-wrapper">
+                            <span class="nav-icon" style="color:var(--amex)">■</span>
+                            <span>AMEX</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Meses</div>
+                    <div id="mesesList"></div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Menu</div>
+                    <div class="nav-item">
+                        <div class="nav-wrapper">
+                            <span class="nav-icon">➕</span>
+                            <span>Nova</span>
+                        </div>
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-wrapper">
+                            <span class="nav-icon">👥</span>
+                            <span>Pessoas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-user" onclick="fazerLogout()">
+                <div class="user-avatar">M</div>
+                <div class="user-info">
+                    <div class="user-name" id="userEmail">Usuário</div>
+                    <div class="user-role">Sair</div>
+                </div>
+            </div>
+        </div>
 
-  <script>
+        <div class="main-content">
+            <div class="header">
+                <h1 id="headerTitle">Dashboard</h1>
+                <div class="header-right">v2.0</div>
+            </div>
+            <div class="content" id="mainContent">
+                <div class="card">Bem-vindo!</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
     const SUPABASE_URL = 'https://umeinujkrfsemtgfvbvs.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZWludWprcmZzZW10Z2Z2YnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MDM1ODksImV4cCI6MjA5MTQ3OTU4OX0.1zD91A2A0eF5e3IJuweh2rZsUSFsUEb6B9yZhwAuXVc';
-    const {createClient}=window.supabase;
-    const supabase=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-    const state={usuario:'',email:'',cartao:'inter',mes:null,transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
-    const mesesNomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    let edicaoMes=null;
+    const {createClient} = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    console.log('✓ Supabase inicializado');
 
-    async function fazerLogin(){
-      const email=document.getElementById('email').value;
-      const password=document.getElementById('password').value;
-      if(!email||!password){alert('Preencha email e senha');return}
-      const {data,error}=await supabase.auth.signInWithPassword({email,password});
-      if(error){alert('Erro: '+error.message);return}
-      state.usuario=data.user.id;
-      state.email=email;
-      document.getElementById('userEmail').textContent=email.split('@')[0];
-      document.getElementById('loginPage').classList.remove('active');
-      document.getElementById('mainLayout').classList.remove('hidden');
-      await carregarDados();
-      init();
-    }
-
-    async function fazerSignup(){
-      const email=document.getElementById('email').value;
-      const password=document.getElementById('password').value;
-      if(!email||!password){alert('Preencha email e senha');return}
-      if(password.length<6){alert('Senha com mínimo 6 caracteres');return}
-      const {error}=await supabase.auth.signUp({email,password});
-      if(error){alert('Erro: '+error.message);return}
-      alert('Conta criada! Agora faça login com essas credenciais.');
-      document.getElementById('email').value='';
-      document.getElementById('password').value='';
-    }
-
-    async function fazerLogout(){
-      await supabase.auth.signOut();
-      document.getElementById('loginPage').classList.add('active');
-      document.getElementById('mainLayout').classList.add('hidden');
-    }
-
-    async function carregarDados(){
-      const {data:pessoas}=await supabase.from('pessoas').select('*').eq('usuario',state.usuario);
-      if(pessoas)state.pessoas=['Você',...pessoas.map(p=>p.nome)];
-      const {data:trans}=await supabase.from('transacoes').select('*').eq('usuario',state.usuario);
-      if(trans)state.transacoes=trans;
-      const {data:fech}=await supabase.from('fechamentos').select('*').eq('usuario',state.usuario);
-      if(fech)fech.forEach(f=>state.fechamentos[`${f.cartao}-${f.mes}`]=f.dia);
-      renderDashboard();
-    }
-
-    function init(){
-      renderMeses();
-      renderDashboard();
-    }
-
-    function getFechamento(mesId){
-      const key=`${state.cartao}-${mesId}`;
-      return state.fechamentos[key]||(state.cartao==='inter'?state.config.inter:state.config.amex);
-    }
-
-    function renderMeses(){
-      let html='';
-      for(let i=11;i>=0;i--){
-        const d=new Date();d.setMonth(d.getMonth()-i);
-        const id=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-        const label=mesesNomes[d.getMonth()]+' '+String(d.getFullYear()).slice(-2);
-        html+=`<div class="nav-item ${!state.mes||state.mes===id?'active':''}" onclick="selecionarMes('${id}')">
-          <div class="nav-wrapper"><span class="nav-icon">${mesesNomes[d.getMonth()]}</span><span>${label}</span></div>
-        </div>`;
-      }
-      document.getElementById('mesesList').innerHTML=html;
-    }
-
-    function selecionarMes(id){
-      state.mes=id;
-      renderMeses();
-      renderDashboard();
-    }
-
-    function selecionarCartao(c){
-      state.cartao=c;
-      renderMeses();
-      renderDashboard();
-    }
-
-    function renderDashboard(){
-      const card=state.cartao.toUpperCase();
-      const cor=state.cartao==='inter'?'var(--inter)':'var(--amex)';
-      const mes=state.mes?new Date(state.mes+'-01').toLocaleDateString('pt-BR',{month:'long',year:'numeric'}):'Atual';
-      const html=`<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:10px">Bom dia, Marcello</div>
-        <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">Resumo <span style="color:${cor};font-weight:600">${card}</span> - ${mes}</div>
-        <div class="stat-grid">
-          <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">R$ 0</div></div>
-          <div class="stat-card"><div class="stat-label">Suas</div><div class="stat-value">R$ 0</div></div>
-          <div class="stat-card"><div class="stat-label">Divididas</div><div class="stat-value">R$ 0</div></div>
-          <div class="stat-card"><div class="stat-label">Saldo</div><div class="stat-value">R$ 0</div></div>
-        </div></div>`;
-      document.getElementById('mainContent').innerHTML=html;
-      document.getElementById('headerTitle').textContent=`${card} - ${mes}`;
-    }
-
-    function abrirNovaTransacao(){
-      alert('Funcionalidade em desenvolvimento');
-    }
-
-    function abrirPessoas(){
-      alert('Funcionalidade em desenvolvimento');
-    }
-
-    window.addEventListener('load',()=>{
-      supabase.auth.onAuthStateChange((event,session)=>{
-        if(session){
-          state.usuario=session.user.id;
-          state.email=session.user.email;
-          document.getElementById('userEmail').textContent=session.user.email.split('@')[0];
-          document.getElementById('loginPage').classList.remove('active');
-          document.getElementById('mainLayout').classList.remove('hidden');
-          carregarDados();
-          init();
+    async function fazerLogin() {
+        console.log('🔓 fazerLogin chamado');
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        console.log('Email:', email, 'Password:', password);
+        
+        if (!email || !password) {
+            alert('Preencha email e senha');
+            return
         }
-      });
-    });
-  </script>
+        
+        const {data, error} = await supabase.auth.signInWithPassword({email, password});
+        if (error) {
+            console.error('Erro no login:', error);
+            alert('Erro: ' + error.message);
+            return
+        }
+        
+        console.log('✓ Login bem-sucedido');
+        document.getElementById('loginPage').classList.remove('active');
+        document.getElementById('mainLayout').classList.remove('hidden');
+    }
+
+    async function fazerSignup() {
+        console.log('✨ fazerSignup chamado');
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        console.log('Email:', email, 'Password:', password);
+        
+        if (!email || !password) {
+            console.warn('❌ Email ou senha vazia');
+            alert('Preencha email e senha');
+            return
+        }
+        if (password.length < 6) {
+            console.warn('❌ Senha muito curta');
+            alert('Senha com mínimo 6 caracteres');
+            return
+        }
+        
+        console.log('🚀 Chamando supabase.auth.signUp...');
+        const {data, error} = await supabase.auth.signUp({email, password});
+        console.log('Resposta do Supabase:', {data, error});
+        
+        if (error) {
+            console.error('❌ Erro:', error);
+            alert('Erro: ' + error.message);
+            return
+        }
+        
+        console.log('✓ Conta criada com sucesso!');
+        alert('Conta criada! Agora faça login com essas credenciais.');
+        document.getElementById('email').value = '';
+        document.getElementById('password').value = '';
+    }
+
+    async function fazerLogout() {
+        await supabase.auth.signOut();
+        document.getElementById('loginPage').classList.add('active');
+        document.getElementById('mainLayout').classList.add('hidden');
+    }
+
+    console.log('✓ Script carregado completamente');
+    </script>
 </body>
 </html>
