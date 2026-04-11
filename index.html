@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Despesas</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    *{margin:0;padding:0;box-sizing:border-box}:root{--inter:#FF6B00;--amex:#999999;--gray-50:#F9F9F9;--gray-100:#EEEEEE;--gray-300:#CCCCCC;--gray-500:#888888;--gray-700:#555555;--gray-900:#1A1A1A;--sidebar-bg:#1F1F1F;--sidebar-text:#D8D6D0;--border:#E0E0E0;--text:#1A1A1A;--text-light:#777777}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--gray-50);color:var(--text);font-size:13px}.login-container{display:none;width:100%;height:100vh;background:linear-gradient(135deg,#000 0%,#333 100%);align-items:center;justify-content:center;position:fixed;top:0;left:0;z-index:10000}.login-container.active{display:flex}.login-box{background:white;padding:32px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.2);width:100%;max-width:360px}.login-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}.login-subtitle{font-size:12px;color:var(--text-light);margin-bottom:20px}.form-field{margin-bottom:12px}.form-field label{display:block;font-size:11px;font-weight:600;margin-bottom:4px;color:var(--text);text-transform:uppercase}.form-field input,.form-field select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;color:var(--text)}.form-field input:focus,.form-field select:focus{outline:0;border-color:var(--text);box-shadow:0 0 0 2px var(--gray-100)}.checkbox-field{display:flex;align-items:center;gap:8px;margin-bottom:12px}.checkbox-field input{width:auto;margin:0}.login-button{width:100%;padding:8px;background:var(--text);color:white;border:0;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer}.login-button:hover{background:var(--gray-700)}.layout{display:flex;height:100vh}.layout.hidden{display:none}.sidebar{width:200px;background:var(--sidebar-bg);color:var(--sidebar-text);display:flex;flex-direction:column;overflow-y:auto;border-right:1px solid rgba(255,255,255,.05);font-size:12px}.sidebar-logo{padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}.sidebar-logo h1{font-size:13px;font-weight:700;margin-bottom:2px}.sidebar-logo p{font-size:10px;opacity:.6}.sidebar-nav{flex:1;padding:12px 0}.sidebar-section{margin-bottom:12px}.sidebar-section-title{font-size:10px;font-weight:700;text-transform:uppercase;opacity:.5;padding:0 12px 6px}.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;color:var(--sidebar-text);cursor:pointer;border-left:2px solid transparent;transition:all .2s;font-size:12px;justify-content:space-between}.nav-item:hover{background:rgba(255,255,255,.05)}.nav-item.active{background:rgba(255,255,255,.08);border-left-color:#FFF;font-weight:600}.nav-item.inter.active{border-left-color:var(--inter);background:rgba(255,107,0,.1)}.nav-item.amex.active{border-left-color:var(--amex);background:rgba(153,153,153,.1)}.nav-icon{font-size:14px;min-width:14px;font-weight:700}.nav-wrapper{display:flex;align-items:center;gap:8px;flex:1}.edit-btn{background:0;border:0;color:var(--sidebar-text);cursor:pointer;font-size:12px;opacity:.6;padding:0 4px}.edit-btn:hover{opacity:1}.sidebar-user{padding:8px 12px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px}.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}.user-info{flex:1;min-width:0}.user-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.user-role{font-size:9px;opacity:.6}.main-content{flex:1;display:flex;flex-direction:column}.header{background:white;padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.header h1{font-size:16px;font-weight:600;color:var(--text)}.header-right{font-size:10px;color:var(--text);background:var(--gray-100);padding:3px 6px;border-radius:3px;font-weight:600}.content{flex:1;overflow-y:auto;padding:16px}.card{background:white;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px}.card-title{font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)}.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.stat-card{background:var(--gray-50);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center}.stat-label{font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:4px}.stat-value{font-size:16px;font-weight:700;color:var(--text)}.btn{padding:6px 12px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;background:white;color:var(--text);text-transform:uppercase}.btn:hover{background:var(--gray-50)}.btn-primary{background:var(--text);color:white;border-color:var(--text)}.btn-primary:hover{background:var(--gray-700)}.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center}.modal.active{display:flex}.modal-content{background:white;border-radius:6px;padding:16px;max-width:400px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,.15)}.modal-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text)}.modal-footer{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}.info-box{background:var(--gray-50);border-left:3px solid var(--text);padding:8px 10px;border-radius:3px;font-size:11px;color:var(--text-light);margin-bottom:12px}.pessoas-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pessoa-tag{background:var(--gray-100);color:var(--text);padding:4px 8px;border-radius:12px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:4px}.pessoa-tag button{background:0;border:0;color:var(--text);cursor:pointer;font-size:12px;padding:0}@media (max-width:768px){.sidebar{width:60px}.sidebar-logo p,.nav-wrapper>span:not(.nav-icon),.sidebar-section-title,.user-info,.edit-btn{display:none}.stat-grid{grid-template-columns:1fr 1fr}}
+    *{margin:0;padding:0;box-sizing:border-box}:root{--inter:#FF6B00;--amex:#999999;--gray-50:#F9F9F9;--gray-100:#EEEEEE;--gray-300:#CCCCCC;--gray-500:#888888;--gray-700:#555555;--gray-900:#1A1A1A;--sidebar-bg:#1F1F1F;--sidebar-text:#D8D6D0;--border:#E0E0E0;--text:#1A1A1A;--text-light:#777777}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--gray-50);color:var(--text);font-size:13px}.login-container{display:none;width:100%;height:100vh;background:linear-gradient(135deg,#000 0%,#333 100%);align-items:center;justify-content:center;position:fixed;top:0;left:0;z-index:10000}.login-container.active{display:flex}.login-box{background:white;padding:32px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.2);width:100%;max-width:360px}.login-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}.login-subtitle{font-size:12px;color:var(--text-light);margin-bottom:20px}.form-field{margin-bottom:12px}.form-field label{display:block;font-size:11px;font-weight:600;margin-bottom:4px;color:var(--text);text-transform:uppercase}.form-field input,.form-field select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;color:var(--text)}.form-field input:focus,.form-field select:focus{outline:0;border-color:var(--text);box-shadow:0 0 0 2px var(--gray-100)}.checkbox-field{display:flex;align-items:center;gap:8px;margin-bottom:12px}.checkbox-field input{width:auto;margin:0}.login-button{width:100%;padding:8px;background:var(--text);color:white;border:0;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer}.login-button:hover{background:var(--gray-700)}.layout{display:flex;height:100vh}.layout.hidden{display:none}.sidebar{width:200px;background:var(--sidebar-bg);color:var(--sidebar-text);display:flex;flex-direction:column;overflow-y:auto;border-right:1px solid rgba(255,255,255,.05);font-size:12px}.sidebar-logo{padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}.sidebar-logo h1{font-size:13px;font-weight:700;margin-bottom:2px}.sidebar-logo p{font-size:10px;opacity:.6}.sidebar-nav{flex:1;padding:12px 0}.sidebar-section{margin-bottom:12px}.sidebar-section-title{font-size:10px;font-weight:700;text-transform:uppercase;opacity:.5;padding:0 12px 6px}.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;color:var(--sidebar-text);cursor:pointer;border-left:2px solid transparent;transition:all .2s;font-size:12px;justify-content:space-between}.nav-item:hover{background:rgba(255,255,255,.05)}.nav-item.active{background:rgba(255,255,255,.08);border-left-color:#FFF;font-weight:600}.nav-item.inter.active{border-left-color:var(--inter);background:rgba(255,107,0,.1)}.nav-item.amex.active{border-left-color:var(--amex);background:rgba(153,153,153,.1)}.nav-icon{font-size:14px;min-width:14px;font-weight:700}.nav-wrapper{display:flex;align-items:center;gap:8px;flex:1}.edit-btn{background:0;border:0;color:var(--sidebar-text);cursor:pointer;font-size:12px;opacity:.6;padding:0 4px}.edit-btn:hover{opacity:1}.sidebar-user{padding:8px 12px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px}.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}.user-info{flex:1;min-width:0}.user-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.user-role{font-size:9px;opacity:.6}.main-content{flex:1;display:flex;flex-direction:column}.header{background:white;padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.header h1{font-size:16px;font-weight:600;color:var(--text)}.header-right{font-size:10px;color:var(--text);background:var(--gray-100);padding:3px 6px;border-radius:3px;font-weight:600}.content{flex:1;overflow-y:auto;padding:16px}.card{background:white;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px}.card-title{font-size:12px;font-weight:600;margin-bottom:10px;color:var(--text)}.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.stat-card{background:var(--gray-50);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center}.stat-label{font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:4px}.stat-value{font-size:16px;font-weight:700;color:var(--text)}.btn{padding:6px 12px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;background:white;color:var(--text);text-transform:uppercase}.btn:hover{background:var(--gray-50)}.btn-primary{background:var(--text);color:white;border-color:var(--text)}.btn-primary:hover{background:var(--gray-700)}.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center}.modal.active{display:flex}.modal-content{background:white;border-radius:6px;padding:16px;max-width:400px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,.15)}.modal-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text)}.modal-footer{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}.info-box{background:var(--gray-50);border-left:3px solid var(--text);padding:8px 10px;border-radius:3px;font-size:11px;color:var(--text-light);margin-bottom:12px}.pessoas-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.pessoa-tag{background:var(--gray-100);color:var(--text);padding:4px 8px;border-radius:12px;font-size:11px;font-weight:500;display:flex;align-items:center;gap:4px}.pessoa-tag button{background:0;border:0;color:var(--text);cursor:pointer;font-size:12px;padding:0}.loading{text-align:center;padding:20px;color:var(--text-light)}@media (max-width:768px){.sidebar{width:60px}.sidebar-logo p,.nav-wrapper>span:not(.nav-icon),.sidebar-section-title,.user-info,.edit-btn{display:none}.stat-grid{grid-template-columns:1fr 1fr}}
   </style>
 </head>
 <body>
@@ -14,14 +15,20 @@
       <h2 class="login-title">Despesas</h2>
       <p class="login-subtitle">Controle de Cartões</p>
       <div class="form-field">
-        <label>Usuário</label>
-        <input type="text" id="loginUser" value="demo">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="seu@email.com">
       </div>
       <div class="form-field">
         <label>Senha</label>
-        <input type="password" id="loginPass" value="123">
+        <input type="password" id="loginPass" placeholder="senha">
       </div>
       <button class="login-button" onclick="fazerLogin()">Entrar</button>
+      <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text-light)">
+        Ou <button style="background:0;border:0;color:var(--text);cursor:pointer;text-decoration:underline" onclick="toggleSignup()">criar conta</button>
+      </div>
+      <div id="signupDiv" style="display:none;margin-top:12px">
+        <button class="login-button" style="background:var(--gray-700)" onclick="fazerSignup()">Criar Conta</button>
+      </div>
     </div>
   </div>
 
@@ -61,8 +68,8 @@
       <div class="sidebar-user" onclick="fazerLogout()">
         <div class="user-avatar">M</div>
         <div class="user-info">
-          <div class="user-name">Marcello</div>
-          <div class="user-role">Usuário</div>
+          <div class="user-name" id="userEmail">Usuário</div>
+          <div class="user-role">Sair</div>
         </div>
       </div>
     </div>
@@ -70,7 +77,7 @@
     <div class="main-content">
       <div class="header">
         <h1 id="headerTitle">Dashboard</h1>
-        <div class="header-right">v1.0</div>
+        <div class="header-right">v2.0</div>
       </div>
       <div class="content" id="mainContent"></div>
     </div>
@@ -121,7 +128,6 @@
         <label>Dividir com</label>
         <select id="transDivide" onchange="togglePercent()">
           <option value="">Só minha</option>
-          <option value="simone">Simone</option>
         </select>
       </div>
       <div id="proporcaoDiv" style="display:none">
@@ -174,22 +180,73 @@
   </div>
 
   <script>
-    const state = {usuario:'',cartao:'inter',mes:null,transacoes:[],pessoas:['Você','Simone'],config:{inter:5,amex:28},fechamentos:{}};
+    const SUPABASE_URL = 'https://umeinujkrfsemtgfvbvs.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZWludWprcmZzZW10Z2Z2YnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MDM1ODksImV4cCI6MjA5MTQ3OTU4OX0.1zD91A2A0eF5e3IJuweh2rZsUSFsUEb6B9yZhwAuXVc';
+    
+    const { createClient } = window.supabase;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const state = {usuario:'',email:'',cartao:'inter',mes:null,transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
     const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     let edicaoMes = null;
 
-    function fazerLogin(){
-      if(document.getElementById('loginUser').value==='demo' && document.getElementById('loginPass').value==='123'){
-        state.usuario='demo';
-        document.getElementById('loginPage').classList.remove('active');
-        document.getElementById('mainLayout').classList.remove('hidden');
-        init();
-      }else alert('Erro');
+    function toggleSignup(){
+      document.getElementById('signupDiv').style.display = document.getElementById('signupDiv').style.display==='none'?'block':'none';
     }
 
-    function fazerLogout(){
+    async function fazerLogin(){
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPass').value;
+      if(!email||!password){alert('Preencha email e senha');return}
+      
+      const {data,error} = await supabase.auth.signInWithPassword({email,password});
+      if(error){alert('Erro: '+error.message);return}
+      
+      state.usuario = data.user.id;
+      state.email = email;
+      document.getElementById('userEmail').textContent = email.split('@')[0];
+      document.getElementById('loginPage').classList.remove('active');
+      document.getElementById('mainLayout').classList.remove('hidden');
+      await carregarDados();
+      init();
+    }
+
+    async function fazerSignup(){
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPass').value;
+      if(!email||!password){alert('Preencha email e senha');return}
+      
+      const {data,error} = await supabase.auth.signUp({email,password});
+      if(error){alert('Erro: '+error.message);return}
+      alert('Conta criada! Verifique seu email e faça login.');
+    }
+
+    async function fazerLogout(){
+      await supabase.auth.signOut();
       document.getElementById('loginPage').classList.add('active');
       document.getElementById('mainLayout').classList.add('hidden');
+    }
+
+    async function carregarDados(){
+      document.getElementById('mainContent').innerHTML = '<div class="loading">Carregando...</div>';
+      
+      const {data:pessoas} = await supabase.from('pessoas').select('*').eq('usuario',state.usuario);
+      if(pessoas) state.pessoas = ['Você',...pessoas.map(p=>p.nome)];
+      renderPessoasSelect();
+
+      const {data:trans} = await supabase.from('transacoes').select('*').eq('usuario',state.usuario);
+      if(trans) state.transacoes = trans;
+
+      const {data:fech} = await supabase.from('fechamentos').select('*').eq('usuario',state.usuario);
+      if(fech) fech.forEach(f => state.fechamentos[`${f.cartao}-${f.mes}`] = f.dia);
+
+      renderDashboard();
+    }
+
+    function renderPessoasSelect(){
+      const html = state.pessoas.filter(p=>p!=='Você').map(p=>`<option value="${p}">${p}</option>`).join('');
+      const select = document.getElementById('transDivide');
+      select.innerHTML = '<option value="">Só minha</option>' + html;
     }
 
     function init(){
@@ -240,11 +297,14 @@
       document.getElementById('fechamentoModal').classList.add('active');
     }
 
-    function salvarFechamento(){
+    async function salvarFechamento(){
       const dia=parseInt(document.getElementById('fechamentoData').value);
       if(dia<1||dia>31){alert('Dia inválido');return}
+      
       const key=`${state.cartao}-${edicaoMes}`;
       state.fechamentos[key]=dia;
+      
+      await supabase.from('fechamentos').upsert({usuario:state.usuario,cartao:state.cartao,mes:edicaoMes,dia});
       fecharModal('fechamentoModal');
       renderMeses();
       renderDashboard();
@@ -296,42 +356,69 @@
       document.getElementById('proporcaoDiv').style.display=document.getElementById('transDivide').value?'block':'none';
     }
 
-    function salvarTransacao(){
+    async function salvarTransacao(){
       const estab=document.getElementById('transEstab').value;
       const valor=parseFloat(document.getElementById('transValor').value);
       const data=document.getElementById('transData').value;
       if(!estab||!valor||!data){alert('Preencha tudo');return}
+      
       const recorrente=document.getElementById('transRecorrente').checked;
       const dataFinal=document.getElementById('transDataFinal').value;
       if(recorrente&&!dataFinal){alert('Data final obrigatória');return}
+      
       let d=new Date(data);
       const fim=recorrente?new Date(dataFinal):d;
+      
       while(d<=fim){
         const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-        state.transacoes.push({id:Date.now()+Math.random(),mes:mesId,estab,valor,data,cartao:document.getElementById('transCartao').value,divide:document.getElementById('transDivide').value,percent:parseInt(document.getElementById('transPercent').value)});
+        const cartao=document.getElementById('transCartao').value;
+        const divide=document.getElementById('transDivide').value;
+        const percent=parseInt(document.getElementById('transPercent').value);
+        
+        await supabase.from('transacoes').insert({
+          usuario:state.usuario,
+          mes:mesId,
+          estabelecimento:estab,
+          valor,
+          data,
+          cartao,
+          divideCom:divide||null,
+          percentualMeu:divide?percent:100
+        });
+        
         d.setMonth(d.getMonth()+1);
       }
+      
       fecharModal('transacaoModal');
-      renderDashboard();
+      await carregarDados();
     }
 
-    function abrirPessoas(){
+    async function abrirPessoas(){
       document.getElementById('pessoasModal').classList.add('active');
       renderPessoas();
     }
 
     function renderPessoas(){
-      document.getElementById('pessoasList').innerHTML=state.pessoas.map(p=>`<div class="pessoa-tag">${p}${p!=='Você'?`<button onclick="removerPessoa('${p}')">×</button>`:''}</div>`).join('');
+      const pessoas = state.pessoas.filter(p=>p!=='Você');
+      document.getElementById('pessoasList').innerHTML=pessoas.map(p=>`<div class="pessoa-tag">${p}<button onclick="removerPessoa('${p}')">×</button></div>`).join('');
     }
 
-    function adicionarPessoa(){
+    async function adicionarPessoa(){
       const n=document.getElementById('novaPessoaInput').value.trim();
-      if(n&&!state.pessoas.includes(n)){state.pessoas.push(n);document.getElementById('novaPessoaInput').value='';renderPessoas()}
+      if(n&&!state.pessoas.includes(n)){
+        await supabase.from('pessoas').insert({usuario:state.usuario,nome:n});
+        state.pessoas.push(n);
+        document.getElementById('novaPessoaInput').value='';
+        renderPessoas();
+        renderPessoasSelect();
+      }
     }
 
-    function removerPessoa(p){
+    async function removerPessoa(p){
+      await supabase.from('pessoas').delete().eq('usuario',state.usuario).eq('nome',p);
       state.pessoas=state.pessoas.filter(x=>x!==p);
       renderPessoas();
+      renderPessoasSelect();
     }
 
     function abrirConfig(){
@@ -350,6 +437,20 @@
     function fecharModal(id){
       document.getElementById(id).classList.remove('active');
     }
+
+    window.addEventListener('load', () => {
+      supabase.auth.onAuthStateChange((event, session) => {
+        if(session){
+          state.usuario=session.user.id;
+          state.email=session.user.email;
+          document.getElementById('userEmail').textContent=session.user.email.split('@')[0];
+          document.getElementById('loginPage').classList.remove('active');
+          document.getElementById('mainLayout').classList.remove('hidden');
+          carregarDados();
+          init();
+        }
+      });
+    });
   </script>
 </body>
 </html>
