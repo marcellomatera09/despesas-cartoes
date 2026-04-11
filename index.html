@@ -6,7 +6,7 @@
     <title>Controle de Despesas</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-    * {margin:0;padding:0;box-sizing:border-box}:root{--inter:#FF6B00;--amex:#999999;--gray-50:#F9F9F9;--gray-100:#EEEEEE;--gray-300:#CCCCCC;--gray-500:#888888;--gray-700:#555555;--gray-900:#1A1A1A;--sidebar-bg:#1F1F1F;--sidebar-text:#D8D6D0;--border:#E0E0E0;--text:#1A1A1A;--text-light:#777777}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--gray-50);color:var(--text);font-size:13px}.login-container{display:none;width:100%;height:100vh;background:linear-gradient(135deg,#000 0%,#333 100%);align-items:center;justify-content:center;position:fixed;top:0;left:0;z-index:10000}.login-container.active{display:flex}.login-box{background:white;padding:32px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.2);width:100%;max-width:360px}.login-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}.login-subtitle{font-size:12px;color:var(--text-light);margin-bottom:20px}.form-field{margin-bottom:12px}.form-field label{display:block;font-size:11px;font-weight:600;margin-bottom:4px;color:var(--text);text-transform:uppercase}.form-field input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:inherit;color:var(--text)}.form-field input:focus{outline:0;border-color:var(--text);box-shadow:0 0 0 2px var(--gray-100)}.login-button{width:100%;padding:8px;background:var(--text);color:white;border:0;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px}.login-button:hover{background:var(--gray-700)}.login-button.secondary{background:var(--gray-700)}.login-button.secondary:hover{background:var(--gray-500)}.layout{display:flex;height:100vh}.layout.hidden{display:none}.sidebar{width:200px;background:var(--sidebar-bg);color:var(--sidebar-text);display:flex;flex-direction:column;overflow-y:auto;border-right:1px solid rgba(255,255,255,.05);font-size:12px}.sidebar-logo{padding:12px;border-bottom:1px solid rgba(255,255,255,.08)}.sidebar-logo h1{font-size:13px;font-weight:700;margin-bottom:2px}.sidebar-logo p{font-size:10px;opacity:.6}.sidebar-nav{flex:1;padding:12px 0}.sidebar-section{margin-bottom:12px}.sidebar-section-title{font-size:10px;font-weight:700;text-transform:uppercase;opacity:.5;padding:0 12px 6px}.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;color:var(--sidebar-text);cursor:pointer;border-left:2px solid transparent;transition:all .2s;font-size:12px;justify-content:space-between}.nav-item:hover{background:rgba(255,255,255,.05)}.nav-item.active{background:rgba(255,255,255,.08);border-left-color:#FFF;font-weight:600}.nav-item.inter.active{border-left-color:var(--inter);background:rgba(255,107,0,.1)}.nav-item.amex.active{border-left-color:var(--amex);background:rgba(153,153,153,.1)}.nav-icon{font-size:14px;min-width:14px;font-weight:700}.nav-wrapper{display:flex;align-items:center;gap:8px;flex:1}.sidebar-user{padding:8px 12px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px}.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--text);color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}.user-info{flex:1;min-width:0}.user-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.user-role{font-size:9px;opacity:.6}.main-content{flex:1;display:flex;flex-direction:column}.header{background:white;padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.header h1{font-size:16px;font-weight:600;color:var(--text)}.header-right{font-size:10px;color:var(--text);background:var(--gray-100);padding:3px 6px;border-radius:3px;font-weight:600}.content{flex:1;overflow-y:auto;padding:16px}.card{background:white;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px}.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.stat-card{background:var(--gray-50);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center}.stat-label{font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:4px}.stat-value{font-size:16px;font-weight:700;color:var(--text)}@media (max-width:768px){.sidebar{width:60px}.sidebar-logo p,.nav-wrapper>span:not(.nav-icon),.sidebar-section-title,.user-info{display:none}.stat-grid{grid-template-columns:1fr 1fr}}
+    *{margin:0;padding:0;box-sizing:border-box}:root{--inter:#FF6B00;--amex:#999999;--gray-50:#F9F9F9;--gray-100:#EEEEEE;--border:#E0E0E0;--text:#1A1A1A;--text-light:#777777;--sidebar-bg:#1F1F1F;--sidebar-text:#D8D6D0}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--gray-50);color:var(--text);font-size:13px}.login-container{display:none;width:100%;height:100vh;background:linear-gradient(135deg,#000 0%,#333 100%);align-items:center;justify-content:center;position:fixed;top:0;left:0;z-index:10000}.login-container.active{display:flex}.login-box{background:white;padding:32px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.2);width:100%;max-width:360px}.login-title{font-size:20px;font-weight:700;margin-bottom:4px}.login-subtitle{font-size:12px;color:var(--text-light);margin-bottom:20px}.form-field{margin-bottom:12px}.form-field label{display:block;font-size:11px;font-weight:600;margin-bottom:4px;text-transform:uppercase}.form-field input{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px}.login-button{width:100%;padding:8px;background:var(--text);color:white;border:0;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px}.login-button:hover{background:#555}.login-button.secondary{background:#666}.layout{display:flex;height:100vh}.layout.hidden{display:none}.sidebar{width:200px;background:var(--sidebar-bg);color:var(--sidebar-text);display:flex;flex-direction:column;overflow-y:auto;font-size:12px}.sidebar-logo{padding:12px;border-bottom:1px solid rgba(255,255,255,.1)}.sidebar-logo h1{font-size:13px;font-weight:700;margin-bottom:2px}.sidebar-nav{flex:1;padding:12px 0}.nav-item{padding:8px 12px;cursor:pointer;border-left:2px solid transparent;transition:all .2s}.nav-item:hover{background:rgba(255,255,255,.05)}.nav-item.active{background:rgba(255,255,255,.08);border-left-color:#FFF;font-weight:600}.nav-item.inter.active{border-left-color:var(--inter)}.nav-item.amex.active{border-left-color:var(--amex)}.sidebar-user{padding:8px 12px;border-top:1px solid rgba(255,255,255,.1);cursor:pointer}.main-content{flex:1;display:flex;flex-direction:column}.header{background:white;padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between}.header h1{font-size:16px;font-weight:600}.content{flex:1;overflow-y:auto;padding:16px}.card{background:white;border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:12px}.card-title{font-size:12px;font-weight:600;margin-bottom:10px}.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.stat-card{background:var(--gray-50);border:1px solid var(--border);border-radius:4px;padding:10px;text-align:center}.stat-label{font-size:10px;color:var(--text-light);font-weight:600;text-transform:uppercase;margin-bottom:4px}.stat-value{font-size:16px;font-weight:700}.btn{padding:6px 12px;border:1px solid var(--border);border-radius:4px;font-size:11px;cursor:pointer;background:white}.btn-primary{background:var(--text);color:white;border-color:var(--text)}.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:9999;align-items:center;justify-content:center}.modal.active{display:flex}.modal-content{background:white;border-radius:6px;padding:16px;max-width:400px;width:90%}.modal-title{font-size:14px;font-weight:600;margin-bottom:12px}.modal-footer{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
     </style>
 </head>
 <body>
@@ -22,8 +22,8 @@
                 <label>Senha</label>
                 <input type="password" id="password" placeholder="sua senha">
             </div>
-            <button type="button" class="login-button" onclick="login()">Entrar</button>
-            <button type="button" class="login-button secondary" onclick="signup()">Criar Conta</button>
+            <button class="login-button" onclick="login()">Entrar</button>
+            <button class="login-button secondary" onclick="signup()">Criar Conta</button>
         </div>
     </div>
 
@@ -34,37 +34,76 @@
                 <p>Cartões</p>
             </div>
             <div class="sidebar-nav">
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title">Cartões</div>
-                    <div class="nav-item inter active">
-                        <div class="nav-wrapper">
-                            <span class="nav-icon" style="color:var(--inter)">■</span>
-                            <span>Inter</span>
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;opacity:.5;padding:0 12px 6px">Cartões</div>
+                <div class="nav-item inter active" onclick="selecionarCartao('inter')">Inter</div>
+                <div class="nav-item amex" onclick="selecionarCartao('amex')">AMEX</div>
+                <div style="margin-top:12px;font-size:10px;font-weight:700;text-transform:uppercase;opacity:.5;padding:0 12px 6px">Ações</div>
+                <div class="nav-item" onclick="abrirNovaTransacao()">➕ Nova Transação</div>
+            </div>
+            <div class="sidebar-user" onclick="logout()">
+                <div>📧 <span id="userEmail">Usuário</span></div>
+                <div style="font-size:9px;opacity:.6">Sair</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="header">
+                <h1 id="headerTitle">Dashboard</h1>
+                <div style="font-size:10px;background:#f0f0f0;padding:3px 6px;border-radius:3px">v2.0</div>
+            </div>
+            <div class="content">
+                <div class="card">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:10px">Bom dia!</div>
+                    <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">Resumo das suas despesas</div>
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Total</div>
+                            <div class="stat-value">R$ 0</div>
                         </div>
-                    </div>
-                    <div class="nav-item amex">
-                        <div class="nav-wrapper">
-                            <span class="nav-icon" style="color:var(--amex)">■</span>
-                            <span>AMEX</span>
+                        <div class="stat-card">
+                            <div class="stat-label">Suas</div>
+                            <div class="stat-value">R$ 0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Compartilhadas</div>
+                            <div class="stat-value">R$ 0</div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="sidebar-user" onclick="logout()">
-                <div class="user-avatar">M</div>
-                <div class="user-info">
-                    <div class="user-name" id="userEmail">Usuário</div>
-                    <div class="user-role">Sair</div>
+                <div class="card">
+                    <div class="card-title">Transações</div>
+                    <div style="font-size:11px;color:var(--text-light)">Nenhuma transação registrada ainda</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Dicas</div>
+                    <div style="font-size:11px;color:var(--text-light)">
+                        ✓ Clique em "Nova Transação" para adicionar uma despesa<br>
+                        ✓ Alterne entre Inter e AMEX na sidebar<br>
+                        ✓ Clique em "Sair" para fazer logout
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="main-content">
-            <div class="header">
-                <h1>Dashboard</h1>
-                <div class="header-right">v2.0</div>
+    </div>
+
+    <div id="transacaoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Nova Transação</div>
+            <div class="form-field">
+                <label>Estabelecimento</label>
+                <input type="text" id="transEstab" placeholder="Ex: Supermercado">
             </div>
-            <div class="content" id="mainContent">
-                <div class="card">Bem-vindo!</div>
+            <div class="form-field">
+                <label>Valor</label>
+                <input type="number" id="transValor" step="0.01" placeholder="100.00">
+            </div>
+            <div class="form-field">
+                <label>Data</label>
+                <input type="date" id="transData">
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="fecharModal('transacaoModal')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarTransacao()">Salvar</button>
             </div>
         </div>
     </div>
@@ -74,58 +113,32 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZWludWprcmZzZW10Z2Z2YnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MDM1ODksImV4cCI6MjA5MTQ3OTU4OX0.1zD91A2A0eF5e3IJuweh2rZsUSFsUEb6B9yZhwAuXVc';
     
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('✓ Supabase inicializado');
+    let currentUser = null;
 
     async function login() {
-        console.log('🔓 login chamado');
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        
-        if (!email || !password) {
-            alert('Preencha email e senha');
-            return;
-        }
+        if (!email || !password) { alert('Preencha email e senha'); return; }
         
         const {data, error} = await sbClient.auth.signInWithPassword({email, password});
-        if (error) {
-            console.error('Erro:', error);
-            alert('Erro: ' + error.message);
-            return;
-        }
+        if (error) { alert('Erro: ' + error.message); return; }
         
-        console.log('✓ Login bem-sucedido');
+        currentUser = data.user;
+        document.getElementById('userEmail').textContent = email.split('@')[0];
         document.getElementById('loginPage').classList.remove('active');
         document.getElementById('mainLayout').classList.remove('hidden');
-        document.getElementById('userEmail').textContent = email.split('@')[0];
     }
 
     async function signup() {
-        console.log('✨ signup chamado');
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        if (!email || !password) { alert('Preencha email e senha'); return; }
+        if (password.length < 6) { alert('Senha com mínimo 6 caracteres'); return; }
         
-        if (!email || !password) {
-            alert('Preencha email e senha');
-            return;
-        }
-        
-        if (password.length < 6) {
-            alert('Senha com mínimo 6 caracteres');
-            return;
-        }
-        
-        console.log('🚀 Criando conta...');
         const {data, error} = await sbClient.auth.signUp({email, password});
-        console.log('Resposta:', {data, error});
+        if (error) { alert('Erro: ' + error.message); return; }
         
-        if (error) {
-            console.error('❌ Erro:', error);
-            alert('Erro: ' + error.message);
-            return;
-        }
-        
-        console.log('✓ Conta criada!');
-        alert('Conta criada! Agora faça login com essas credenciais.');
+        alert('Conta criada! Agora faça login.');
         document.getElementById('email').value = '';
         document.getElementById('password').value = '';
     }
@@ -136,7 +149,44 @@
         document.getElementById('mainLayout').classList.add('hidden');
     }
 
-    console.log('✓ Script carregado');
+    function selecionarCartao(cartao) {
+        document.querySelectorAll('.nav-item.inter, .nav-item.amex').forEach(e => e.classList.remove('active'));
+        event.target.closest('.nav-item').classList.add('active');
+        document.getElementById('headerTitle').textContent = cartao.toUpperCase();
+    }
+
+    function abrirNovaTransacao() {
+        document.getElementById('transData').valueAsDate = new Date();
+        document.getElementById('transacaoModal').classList.add('active');
+    }
+
+    function fecharModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    async function salvarTransacao() {
+        const estab = document.getElementById('transEstab').value;
+        const valor = document.getElementById('transValor').value;
+        const data = document.getElementById('transData').value;
+        
+        if (!estab || !valor || !data) { alert('Preencha todos os campos'); return; }
+        
+        alert('Transação salva: ' + estab + ' - R$ ' + valor);
+        fecharModal('transacaoModal');
+        document.getElementById('transEstab').value = '';
+        document.getElementById('transValor').value = '';
+    }
+
+    window.addEventListener('load', () => {
+        sbClient.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                currentUser = session.user;
+                document.getElementById('userEmail').textContent = session.user.email.split('@')[0];
+                document.getElementById('loginPage').classList.remove('active');
+                document.getElementById('mainLayout').classList.remove('hidden');
+            }
+        });
+    });
     </script>
 </body>
 </html>
