@@ -108,7 +108,24 @@
       <div style="text-align:center;margin:12px 0;color:var(--text-light);font-size:11px">OU PREENCHA</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="form-field"><label>Estabelecimento</label><input type="text" id="transEstab"></div>
-        <div class="form-field"><label>Valor</label><input type="number" id="transValor" step="0.01"></div>
+        <div class="form-field"><label>Valor Total</label><input type="number" id="transValor" step="0.01" oninput="atualizarParcela()"></div>
+      </div>
+      <div class="checkbox-field" style="margin-bottom:4px">
+        <input type="checkbox" id="transParcelado" onchange="toggleParcelado()">
+        <label for="transParcelado" style="margin:0;text-transform:none">Parcelado?</label>
+      </div>
+      <div id="parceladoDiv" style="display:none;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-field">
+            <label>Nº de Parcelas</label>
+            <input type="number" id="transParcelas" min="2" max="60" value="2" oninput="atualizarParcela()">
+          </div>
+          <div class="form-field">
+            <label>Valor por Parcela</label>
+            <input type="number" id="transValorParcela" step="0.01" readonly style="background:var(--gray-100);color:var(--text-light)">
+          </div>
+        </div>
+        <div class="info-box" id="parcelaInfo">Criará 2 lançamentos de R$ 0,00</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="form-field"><label>Data</label><input type="date" id="transData"></div>
@@ -518,6 +535,10 @@
       document.getElementById('transValor').value='';
       document.getElementById('transDivide').value='';
       document.getElementById('transRecorrente').checked=false;
+      document.getElementById('transParcelado').checked=false;
+      document.getElementById('parceladoDiv').style.display='none';
+      document.getElementById('transParcelas').value=2;
+      document.getElementById('transValorParcela').value='';
       document.getElementById('transPercent').value=100;
       document.getElementById('percentLabel').textContent='100';
       // Data de hoje (horário local)
@@ -527,6 +548,21 @@
       toggleRecorrencia();
       togglePercent();
       document.getElementById('transacaoModal').classList.add('active');
+    }
+
+    function toggleParcelado(){
+      const show=document.getElementById('transParcelado').checked;
+      document.getElementById('parceladoDiv').style.display=show?'block':'none';
+      if(show)atualizarParcela();
+    }
+
+    function atualizarParcela(){
+      if(!document.getElementById('transParcelado').checked)return;
+      const total=parseFloat(document.getElementById('transValor').value)||0;
+      const n=parseInt(document.getElementById('transParcelas').value)||1;
+      const parcela=Math.round(total/n*100)/100;
+      document.getElementById('transValorParcela').value=parcela.toFixed(2);
+      document.getElementById('parcelaInfo').textContent=`Criará ${n} lançamento${n>1?'s':''} de ${fmt(parcela)}`;
     }
 
     function toggleRecorrencia(){
@@ -577,13 +613,18 @@
         const recorrente=document.getElementById('transRecorrente').checked;
         const dataFinal=document.getElementById('transDataFinal').value;
         if(recorrente&&!dataFinal){alert('Data final obrigatória');return}
+        const parcelado=document.getElementById('transParcelado').checked;
+        const nParcelas=parcelado?parseInt(document.getElementById('transParcelas').value)||1:1;
+        const valorParcela=parcelado?Math.round(valor/nParcelas*100)/100:valor;
         const parsearData=s=>{const[y,m,dia]=s.split('-').map(Number);return new Date(y,m-1,dia);};
         let d=parsearData(data);
-        const fim=recorrente?parsearData(dataFinal):parsearData(data);
+        // Se parcelado, ignora recorrente e usa nParcelas
         let count=0;
-        while(d<=fim){
+        const maxIter=parcelado?nParcelas:(recorrente?120:1);
+        const fim=(!parcelado&&recorrente)?parsearData(dataFinal):null;
+        while(parcelado?count<nParcelas:(fim?d<=fim:count<1)){
           const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-          state.transacoes.push({id:String(Date.now())+String(Math.floor(Math.random()*9999)),mes:mesId,estab,valor,data,cartao:document.getElementById('transCartao').value,divide:document.getElementById('transDivide').value,percent:parseInt(document.getElementById('transPercent').value)||100});
+          state.transacoes.push({id:String(Date.now())+String(Math.floor(Math.random()*9999)),mes:mesId,estab,valor:parcelado?valorParcela:valor,data,cartao:document.getElementById('transCartao').value,divide:document.getElementById('transDivide').value,percent:parseInt(document.getElementById('transPercent').value)||100});
           if(!state.meses.includes(mesId))state.meses.push(mesId);
           d.setMonth(d.getMonth()+1);
           count++;
