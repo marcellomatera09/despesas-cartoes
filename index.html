@@ -233,6 +233,16 @@
       </div>
     </div>
   </div>
+  <div id="confirmModal" class="modal">
+    <div class="modal-content" style="max-width:300px">
+      <div class="modal-title" id="confirmMsg">Confirmar?</div>
+      <div class="modal-footer">
+        <button class="btn" onclick="_confirmCancel()">Cancelar</button>
+        <button class="btn btn-primary" style="background:#c00;border-color:#c00" onclick="_confirmOk()">Excluir</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://umeinujkrfsemtgfvbvs.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZWludWprcmZzZW10Z2Z2YnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MDM1ODksImV4cCI6MjA5MTQ3OTU4OX0.1zD91A2A0eF5e3IJuweh2rZsUSFsUEb6B9yZhwAuXVc';
@@ -391,20 +401,6 @@
     function toggleAnteriores(){mostrarAnteriores=!mostrarAnteriores;renderMeses();}
     function toggleFuturos(){mostrarFuturos=!mostrarFuturos;renderMeses();}
 
-    function removerMes(id){
-      const temTrans=state.transacoes.some(t=>t.mes===id);
-      if(temTrans){alert('Não é possível remover um mês com transações.');return}
-      if(!confirm('Remover mês '+id+'?'))return;
-      state.meses=state.meses.filter(m=>m!==id);
-      if(state.mes===id){
-        const sorted=[...state.meses].sort();
-        state.mes=sorted[sorted.length-1]||null;
-      }
-      salvarDados();
-      renderMeses();
-      renderDashboard();
-    }
-
     function selecionarMes(id){
       state.mes=id;
       renderMeses();
@@ -443,11 +439,42 @@
     function fmt(v){return'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
 
     function excluirTransacao(id){
-      if(!confirm('Excluir esta transação?'))return;
-      state.transacoes=state.transacoes.filter(t=>String(t.id)!==String(id));
-      salvarDados();
-      renderMeses();
-      renderDashboard();
+      _confirmar('Excluir esta transação?', function(){
+        state.transacoes=state.transacoes.filter(t=>String(t.id)!==String(id));
+        salvarDados();
+        renderMeses();
+        renderDashboard();
+      });
+    }
+
+    function removerMes(id){
+      const temTrans=state.transacoes.some(t=>t.mes===id);
+      if(temTrans){alert('Não é possível remover um mês com transações.');return}
+      _confirmar('Remover mês?', function(){
+        state.meses=state.meses.filter(m=>m!==id);
+        if(state.mes===id){
+          const sorted=[...state.meses].sort();
+          state.mes=sorted[sorted.length-1]||null;
+        }
+        salvarDados();
+        renderMeses();
+        renderDashboard();
+      });
+    }
+
+    let _confirmarCb=null;
+    function _confirmar(msg, cb){
+      _confirmarCb=cb;
+      document.getElementById('confirmMsg').textContent=msg;
+      document.getElementById('confirmModal').classList.add('active');
+    }
+    function _confirmOk(){
+      fecharModal('confirmModal');
+      if(_confirmarCb){_confirmarCb();_confirmarCb=null;}
+    }
+    function _confirmCancel(){
+      fecharModal('confirmModal');
+      _confirmarCb=null;
     }
 
     function gerarRelatorio(){
@@ -609,9 +636,9 @@
               <td style="padding:6px;color:var(--text-light);font-size:11px">${divideLabel}</td>
               <td style="padding:6px;text-align:center">${tipoTag}</td>
               <td style="padding:6px;text-align:center;white-space:nowrap">
-                <button data-action="editar" data-id="${t.id}" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px" title="Editar">✏️</button>
-                <button data-action="mover" data-id="${t.id}" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px" title="Mover">↕</button>
-                <button data-action="excluir" data-id="${t.id}" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px" title="Excluir">🗑</button>
+                <button onclick="abrirEditarTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px" title="Editar">✏️</button>
+                <button onclick="abrirMover('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px" title="Mover">↕</button>
+                <button onclick="excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#c00;font-size:14px" title="Excluir">🗑</button>
               </td>
             </tr>`;
           }).join('')}
@@ -970,16 +997,12 @@
       document.addEventListener('click', function(e){
         const el=e.target.closest('[data-action]');
         if(!el)return;
-        e.stopPropagation();
         const action=el.dataset.action;
-        if(action==='selMes')    selecionarMes(el.dataset.mes);
+        if(action==='selMes')          selecionarMes(el.dataset.mes);
         else if(action==='fechamento') abrirFechamento(el.dataset.mes);
         else if(action==='remMes')     removerMes(el.dataset.mes);
         else if(action==='toggleAnt')  toggleAnteriores();
         else if(action==='toggleFut')  toggleFuturos();
-        else if(action==='excluir')    excluirTransacao(el.dataset.id);
-        else if(action==='mover')      abrirMover(el.dataset.id);
-        else if(action==='editar')     abrirEditarTransacao(el.dataset.id);
       });
 
       sbClient.auth.onAuthStateChange((event, session) => {
