@@ -365,47 +365,110 @@
 
     function fmt(v){return'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
 
+    function excluirTransacao(id){
+      if(!confirm('Excluir esta transação?'))return;
+      state.transacoes=state.transacoes.filter(t=>t.id!==id);
+      salvarDados();
+      renderDashboard();
+    }
+
+    function gerarRelatorio(){
+      const mes=state.mes;
+      const mesLabel=new Date(mes+'-15').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+      const cartoes=['inter','amex'];
+      let txt=`RELATÓRIO — ${mesLabel.toUpperCase()}\n${'='.repeat(40)}\n\n`;
+      cartoes.forEach(c=>{
+        const trans=state.transacoes.filter(t=>t.mes===mes&&t.cartao===c).sort((a,b)=>a.data>b.data?1:-1);
+        const total=trans.reduce((s,t)=>s+t.valor,0);
+        const minhas=trans.reduce((s,t)=>s+(t.valor*(t.percent||100)/100),0);
+        const delas=total-minhas;
+        txt+=`${c.toUpperCase()}\n${'-'.repeat(20)}\n`;
+        if(trans.length===0){txt+='Sem transações.\n';} 
+        else {
+          trans.forEach(t=>{
+            const data=t.data?t.data.split('-').reverse().join('/'):'';
+            const div=t.divide?` (${t.divide} ${100-(t.percent||100)}%)`:'';
+            txt+=`${data}  ${t.estab.padEnd(25)}  ${fmt(t.valor)}${div}\n`;
+          });
+          txt+=`\nTotal: ${fmt(total)}  |  Suas: ${fmt(minhas)}  |  Delas: ${fmt(delas)}\n`;
+        }
+        txt+='\n';
+      });
+      // Abrir em nova janela para imprimir/salvar
+      const w=window.open('','_blank');
+      w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:24px;white-space:pre">${txt}</pre>`);
+      w.document.title=`Relatório ${mesLabel}`;
+      w.print();
+    }
+
     function renderDashboard(){
-      const card=state.cartao.toUpperCase();
       const cor=state.cartao==='inter'?'var(--inter)':'var(--amex)';
       const mesLabel=state.mes?new Date(state.mes+'-15').toLocaleDateString('pt-BR',{month:'long',year:'numeric'}):'Atual';
       const fech=state.mes?getFechamento(state.mes):'';
 
-      // Filtrar transações do mês+cartão selecionados
-      const trans=state.transacoes.filter(t=>t.mes===state.mes&&t.cartao===state.cartao);
-      const total=trans.reduce((s,t)=>s+t.valor,0);
-      const divididas=trans.filter(t=>t.divide).reduce((s,t)=>s+(t.valor*(100-(t.percent||100))/100),0);
-      const minhas=total-divididas;
+      // Cards de resumo por cartão
+      const resumoCartoes=['inter','amex'].map(c=>{
+        const corC=c==='inter'?'var(--inter)':'var(--amex)';
+        const trans=state.transacoes.filter(t=>t.mes===state.mes&&t.cartao===c);
+        const total=trans.reduce((s,t)=>s+t.valor,0);
+        const minhas=trans.reduce((s,t)=>s+(t.valor*(t.percent||100)/100),0);
+        const ativo=state.cartao===c?`border:2px solid ${corC}`:'border:1px solid var(--border)';
+        return `<div class="stat-card" onclick="selecionarCartaoDir('${c}')" style="cursor:pointer;${ativo}">
+          <div class="stat-label" style="color:${corC}">${c.toUpperCase()}</div>
+          <div class="stat-value">${fmt(total)}</div>
+          <div style="font-size:10px;color:var(--text-light);margin-top:2px">Suas: ${fmt(minhas)}</div>
+        </div>`;
+      }).join('');
 
-      // Tabela de transações
+      // Transações do cartão selecionado
+      const trans=state.transacoes.filter(t=>t.mes===state.mes&&t.cartao===state.cartao);
       let linhas='<div style="font-size:11px;color:var(--text-light);padding:8px 0">Nenhuma transação neste mês.</div>';
       if(trans.length>0){
         linhas=`<table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr style="border-bottom:1px solid var(--border)">
-            <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--text-light)">DATA</th>
-            <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--text-light)">ESTABELECIMENTO</th>
-            <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--text-light)">VALOR</th>
-            <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--text-light)">DIVIDE</th>
+          <thead><tr style="border-bottom:2px solid var(--border)">
+            <th style="text-align:left;padding:6px;font-size:10px;color:var(--text-light)">DATA</th>
+            <th style="text-align:left;padding:6px;font-size:10px;color:var(--text-light)">ESTABELECIMENTO</th>
+            <th style="text-align:right;padding:6px;font-size:10px;color:var(--text-light)">VALOR</th>
+            <th style="text-align:left;padding:6px;font-size:10px;color:var(--text-light)">DIVIDE</th>
+            <th style="padding:6px"></th>
           </tr></thead><tbody>
-          ${trans.sort((a,b)=>a.data>b.data?-1:1).map(t=>`<tr style="border-bottom:1px solid var(--gray-100)">
-            <td style="padding:6px;color:var(--text-light)">${t.data?t.data.split('-').reverse().join('/'):'—'}</td>
+          ${[...trans].sort((a,b)=>a.data>b.data?-1:1).map(t=>`<tr style="border-bottom:1px solid var(--gray-100)">
+            <td style="padding:6px;color:var(--text-light);white-space:nowrap">${t.data?t.data.split('-').reverse().join('/'):'—'}</td>
             <td style="padding:6px;font-weight:500">${t.estab}</td>
-            <td style="padding:6px;text-align:right;font-weight:600">${fmt(t.valor)}</td>
-            <td style="padding:6px;color:var(--text-light)">${t.divide?t.divide+' ('+t.percent+'%)':''}</td>
+            <td style="padding:6px;text-align:right;font-weight:600;white-space:nowrap">${fmt(t.valor)}</td>
+            <td style="padding:6px;color:var(--text-light);font-size:11px">${t.divide?t.divide+' ('+(100-(t.percent||100))+'% deles)':''}</td>
+            <td style="padding:6px;text-align:center"><button onclick="excluirTransacao(${t.id})" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:14px" title="Excluir">🗑</button></td>
           </tr>`).join('')}
           </tbody></table>`;
       }
 
-      const html=`<div class="card">
-        <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">Resumo <span style="color:${cor};font-weight:600">${card}</span> — ${mesLabel} ${fech?'· Fecha dia '+fech:''}</div>
-        <div class="stat-grid">
-          <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${fmt(total)}</div></div>
-          <div class="stat-card"><div class="stat-label">Minhas</div><div class="stat-value">${fmt(minhas)}</div></div>
-          <div class="stat-card"><div class="stat-label">Divididas</div><div class="stat-value">${fmt(divididas)}</div></div>
-        </div></div>
-        <div class="card"><div class="card-title">Transações (${trans.length})</div>${linhas}</div>`;
+      const totalCartao=trans.reduce((s,t)=>s+t.valor,0);
+      const minhasCartao=trans.reduce((s,t)=>s+(t.valor*(t.percent||100)/100),0);
+
+      const html=`
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:600">${mesLabel} ${fech?'<span style="font-size:10px;color:var(--text-light);font-weight:400">· Fecha dia '+fech+'</span>':''}</div>
+            <button class="btn" onclick="gerarRelatorio()" style="font-size:10px;padding:4px 8px">📄 Relatório</button>
+          </div>
+          <div class="stat-grid">${resumoCartoes}</div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div class="card-title" style="margin:0">Transações ${state.cartao.toUpperCase()} (${trans.length})</div>
+            <div style="font-size:11px;color:var(--text-light)">Total: <b>${fmt(totalCartao)}</b> · Suas: <b>${fmt(minhasCartao)}</b></div>
+          </div>
+          ${linhas}
+        </div>`;
       document.getElementById('mainContent').innerHTML=html;
-      document.getElementById('headerTitle').textContent=`${card} — ${mesLabel}`;
+      document.getElementById('headerTitle').textContent=mesLabel;
+    }
+
+    function selecionarCartaoDir(c){
+      state.cartao=c;
+      document.querySelectorAll('[onclick*="selecionarCartao("]').forEach(e=>e.classList.remove('active'));
+      document.querySelector(`[onclick="selecionarCartao('${c}')"]`).classList.add('active');
+      renderDashboard();
     }
 
     function abrirNovaTransacao(){
