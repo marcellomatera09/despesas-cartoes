@@ -584,6 +584,7 @@
               <td style="padding:6px;color:var(--text-light);font-size:11px">${t.divide?t.divide+' ('+(100-(t.percent||100))+'%)':''}</td>
               <td style="padding:6px;text-align:center">${tipoTag}</td>
               <td style="padding:6px;text-align:center;white-space:nowrap">
+                <button onclick="abrirEditarTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#bbb'" title="Editar">✏️</button>
                 <button onclick="abrirMover('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#555'" onmouseout="this.style.color='#bbb'" title="Mover">↕</button>
                 <button onclick="excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;transition:color .2s" onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#bbb'" title="Excluir">🗑</button>
               </td>
@@ -621,7 +622,36 @@
       renderDashboard();
     }
 
+    let _editandoId = null;
+
+    function abrirEditarTransacao(id){
+      const t=state.transacoes.find(x=>x.id===id);
+      if(!t)return;
+      _editandoId=id;
+      // Preencher modal com dados existentes
+      document.getElementById('smsInput').value='';
+      document.getElementById('transEstab').value=t.estab||'';
+      document.getElementById('transValor').value=t.valor||'';
+      document.getElementById('transData').value=t.data||'';
+      document.getElementById('transCartao').value=t.cartao||state.cartao;
+      document.getElementById('transObs').value=t.obs||'';
+      document.getElementById('transDivide').value=t.divide||'';
+      document.getElementById('transRecorrente').checked=false;
+      document.getElementById('transParcelado').checked=false;
+      document.getElementById('parceladoDiv').style.display='none';
+      document.getElementById('parcelasCustomDiv').style.display='none';
+      togglePercent();
+      if(t.divide){
+        document.getElementById('transPercent').value=t.percent||50;
+        document.getElementById('transPercentDeles').value=100-(t.percent||50);
+      }
+      document.querySelector('#transacaoModal .modal-title').textContent='Editar Transação';
+      document.getElementById('transacaoModal').classList.add('active');
+    }
+
     function abrirNovaTransacao(){
+      _editandoId=null;
+      document.querySelector('#transacaoModal .modal-title').textContent='Nova Transação';
       document.getElementById('smsInput').value='';
       document.getElementById('transEstab').value='';
       document.getElementById('transValor').value='';
@@ -712,6 +742,25 @@
         const data=document.getElementById('transData').value;
         const obs=document.getElementById('transObs').value.trim();
         if(!estab||!valor||!data){alert('Preencha estabelecimento, valor e data');return}
+
+        // MODO EDIÇÃO — atualiza só este registro
+        if(_editandoId){
+          const idx=state.transacoes.findIndex(x=>x.id===_editandoId);
+          if(idx>=0){
+            const t=state.transacoes[idx];
+            const divide=document.getElementById('transDivide').value;
+            const percent=divide?parseInt(document.getElementById('transPercent').value)||50:100;
+            state.transacoes[idx]={...t,estab,valor,data,obs,
+              cartao:document.getElementById('transCartao').value,
+              divide,percent};
+          }
+          _editandoId=null;
+          salvarDados();
+          fecharModal('transacaoModal');
+          renderMeses();
+          renderDashboard();
+          return;
+        }
         const recorrente=document.getElementById('transRecorrente').checked;
         const dataFinal=document.getElementById('transDataFinal').value;
         if(recorrente&&!dataFinal){alert('Data final obrigatória');return}
