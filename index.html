@@ -249,7 +249,11 @@
     }
 
     function salvarDados(){
-      localStorage.setItem('despesas_'+state.usuario, JSON.stringify({transacoes:state.transacoes,pessoas:state.pessoas,config:state.config,fechamentos:state.fechamentos,meses:state.meses}));
+      if(!state.usuario){console.error('salvarDados: usuario vazio!');return;}
+      const key='despesas_'+state.usuario;
+      const payload={transacoes:state.transacoes,pessoas:state.pessoas,config:state.config,fechamentos:state.fechamentos,meses:state.meses};
+      localStorage.setItem(key,JSON.stringify(payload));
+      console.log('Salvo OK:', key, '| transacoes:', state.transacoes.length);
     }
 
     function renderPessoasSelect(){
@@ -379,7 +383,7 @@
 
     function abrirNovaTransacao(){
       document.getElementById('transacaoModal').classList.add('active');
-      document.getElementById('transData').value=new Date().toISOString().split('T')[0];
+      const _h=new Date();document.getElementById('transData').value=_h.getFullYear()+'-'+String(_h.getMonth()+1).padStart(2,'0')+'-'+String(_h.getDate()).padStart(2,'0');
       document.getElementById('transCartao').value=state.cartao;
       document.getElementById('transDivide').value='';
       document.getElementById('transRecorrente').checked=false;
@@ -395,10 +399,29 @@
 
     function extrairSMS(){
       const sms=document.getElementById('smsInput').value;
-      const valor=sms.match(/R\$\s+([\d.]+,\d{2})/);
-      const estab=sms.match(/(?:em|no|na)\s+([A-Z][^,]*?)(?:\s+[A-Z]{2}|,)/i);
-      if(valor)document.getElementById('transValor').value=valor[1].replace('.','').replace(',','.');
-      if(estab)document.getElementById('transEstab').value=estab[1].trim();
+      // Valor: R$ 21,95
+      const mValor=sms.match(/R\$\s*([\d.]+,\d{2})/);
+      if(mValor){
+        document.getElementById('transValor').value=mValor[1].replace(/\./g,'').replace(',','.');
+      }
+      // Data: 11/04/2026 ou 11/04/26
+      const mData=sms.match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
+      if(mData){
+        const ano=mData[3].length===2?'20'+mData[3]:mData[3];
+        document.getElementById('transData').value=`${ano}-${mData[2]}-${mData[1]}`;
+      }
+      // Estabelecimento: vem após o valor, ex: "21,95 56BacioDiLatte-  Rio~de~J"
+      // Pega a primeira palavra após os dígitos prefixos, remove traço final
+      const mEstab=sms.match(/R\$\s*[\d.,]+\s+\d*([A-Za-zÀ-ú][A-Za-zÀ-ú0-9\-]*)/);
+      if(mEstab){
+        let estab=mEstab[1].replace(/-+$/,'').trim();
+        document.getElementById('transEstab').value=estab;
+      }
+      // Cartão final: detectar pelo número final
+      const mCartao=sms.match(/CART[AÃ]O\s+FINAL\s+(\d+)/i);
+      if(mCartao){
+        document.getElementById('transCartao').value=state.cartao; // mantém o cartão selecionado
+      }
     }
 
     function togglePercent(){
