@@ -75,7 +75,7 @@
     <div class="main-content">
       <div class="header">
         <h1 id="headerTitle">Dashboard</h1>
-        <div class="header-right">v1.0</div>
+        <div id="relogio" style="font-size:11px;color:var(--text-light);text-align:right;line-height:1.4"></div>
       </div>
       <div class="content" id="mainContent"></div>
     </div>
@@ -272,52 +272,45 @@
       return state.fechamentos[key]||(state.cartao==='inter'?state.config.inter:state.config.amex);
     }
 
+    let mostrarAnteriores = false;
+
     function renderMeses(){
+      const hoje = new Date();
+      const mesAtual = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
       const sorted=[...state.meses].sort();
+      const anteriores = sorted.filter(id=>id<mesAtual);
+      const atuaisEFuturos = sorted.filter(id=>id>=mesAtual);
       let html='';
-      // Botão: adicionar mês anterior ao mais antigo
-      html+=`<div class="nav-item" onclick="adicionarMes('antes')" title="Adicionar mês anterior" style="opacity:.6;font-size:10px">
-        <div class="nav-wrapper"><span class="nav-icon">＋</span><span>Mês anterior</span></div>
-      </div>`;
-      // Lista de meses (do mais antigo ao mais recente)
-      sorted.forEach(id=>{
-        const d=new Date(id+'-15');
-        const label=mesesNomes[d.getMonth()]+' '+String(d.getFullYear()).slice(-2);
-        const ativo=!state.mes&&id===sorted[sorted.length-1]?true:state.mes===id;
-        const temTrans=state.transacoes.some(t=>t.mes===id);
-        html+=`<div class="nav-item ${ativo?'active':''}" onclick="selecionarMes('${id}')">
-          <div class="nav-wrapper"><span class="nav-icon">${mesesNomes[d.getMonth()]}</span><span>${label}</span></div>
-          <div style="display:flex;gap:2px;align-items:center">
-            <button class="edit-btn" onclick="abrirFechamento('${id}',event)" title="Fechamento">✏️</button>
-            ${!temTrans?`<button class="edit-btn" onclick="removerMes('${id}',event)" title="Remover mês" style="font-size:14px;color:#c00">×</button>`:''}
-          </div>
+      if(anteriores.length>0){
+        html+=`<div class="nav-item" onclick="toggleAnteriores()" style="opacity:.6;font-size:10px">
+          <div class="nav-wrapper"><span class="nav-icon">${mostrarAnteriores?'▲':'▼'}</span><span>${mostrarAnteriores?'Ocultar anteriores':anteriores.length+' mês(es) anterior(es)'}</span></div>
         </div>`;
-      });
-      // Botão: adicionar mês seguinte ao mais recente
-      html+=`<div class="nav-item" onclick="adicionarMes('depois')" title="Adicionar próximo mês" style="opacity:.6;font-size:10px">
-        <div class="nav-wrapper"><span class="nav-icon">＋</span><span>Próximo mês</span></div>
-      </div>`;
+        if(mostrarAnteriores){
+          anteriores.forEach(id=>{ html+=renderMesItem(id); });
+          html+=`<div style="height:1px;background:rgba(255,255,255,.08);margin:4px 0"></div>`;
+        }
+      }
+      atuaisEFuturos.forEach(id=>{ html+=renderMesItem(id); });
       document.getElementById('mesesList').innerHTML=html;
     }
 
-    function adicionarMes(quando){
-      const sorted=[...state.meses].sort();
-      let ref,d;
-      if(quando==='antes'){
-        ref=sorted[0]||new Date().toISOString().slice(0,7);
-        d=new Date(ref+'-15');
-        d.setMonth(d.getMonth()-1);
-      } else {
-        ref=sorted[sorted.length-1]||new Date().toISOString().slice(0,7);
-        d=new Date(ref+'-15');
-        d.setMonth(d.getMonth()+1);
-      }
-      const novo=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      if(!state.meses.includes(novo)){
-        state.meses.push(novo);
-        salvarDados();
-        renderMeses();
-      }
+    function renderMesItem(id){
+      const d=new Date(id+'-15');
+      const label=mesesNomes[d.getMonth()]+' '+String(d.getFullYear()).slice(-2);
+      const ativo=state.mes===id;
+      const temTrans=state.transacoes.some(t=>t.mes===id);
+      return `<div class="nav-item ${ativo?'active':''}" onclick="selecionarMes('${id}')">
+        <div class="nav-wrapper"><span class="nav-icon">${mesesNomes[d.getMonth()]}</span><span>${label}</span></div>
+        <div style="display:flex;gap:2px;align-items:center">
+          <button class="edit-btn" onclick="abrirFechamento('${id}',event)" title="Fechamento">✏️</button>
+          ${!temTrans?`<button class="edit-btn" onclick="removerMes('${id}',event)" title="Remover" style="font-size:14px;color:#c00">×</button>`:''}
+        </div>
+      </div>`;
+    }
+
+    function toggleAnteriores(){
+      mostrarAnteriores=!mostrarAnteriores;
+      renderMeses();
     }
 
     function removerMes(id,e){
@@ -472,7 +465,20 @@
       document.getElementById(id).classList.remove('active');
     }
 
+    const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    function atualizarRelogio(){
+      const el=document.getElementById('relogio');
+      if(!el)return;
+      const n=new Date();
+      const dia=diasSemana[n.getDay()];
+      const data=String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0');
+      const hora=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
+      el.innerHTML=`<span style="font-weight:600;color:var(--text)">${dia}, ${data}</span><br>${hora}`;
+    }
+    setInterval(atualizarRelogio,1000);
+
     window.addEventListener('load', () => {
+      atualizarRelogio();
       sbClient.auth.onAuthStateChange((event, session) => {
         if(session){
           state.usuario = session.user.id;
