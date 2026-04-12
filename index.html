@@ -125,7 +125,10 @@
             <input type="number" id="transValorParcela" step="0.01" readonly style="background:var(--gray-100);color:var(--text-light)">
           </div>
         </div>
-        <div class="info-box" id="parcelaInfo">Criará 2 lançamentos de R$ 0,00</div>
+        <div class="info-box" id="parcelaInfo" style="cursor:pointer" onclick="toggleParcelasCustom()">Criará 2 lançamentos de R$ 0,00 · <u>Ajustar parcelas individualmente</u></div>
+        <div id="parcelasCustomDiv" style="display:none;margin-top:8px;max-height:180px;overflow-y:auto">
+          <div id="parcelasCustomList"></div>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="form-field"><label>Data</label><input type="date" id="transData"></div>
@@ -146,10 +149,20 @@
         </select>
       </div>
       <div id="proporcaoDiv" style="display:none">
-        <div class="form-field">
-          <label>Seu %: <span id="percentLabel">100</span>%</label>
-          <input type="range" min="0" max="100" value="100" id="transPercent" onchange="document.getElementById('percentLabel').textContent=this.value">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="form-field">
+            <label>Seu %</label>
+            <input type="number" min="0" max="100" value="50" id="transPercent" oninput="sincPercent('meu',this.value)" style="font-weight:600">
+          </div>
+          <div class="form-field">
+            <label>% Deles</label>
+            <input type="number" min="0" max="100" value="50" id="transPercentDeles" oninput="sincPercent('deles',this.value)" style="font-weight:600">
+          </div>
         </div>
+      </div>
+      <div class="form-field" style="margin-top:10px">
+        <label>Observações</label>
+        <textarea id="transObs" style="width:100%;min-height:44px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:inherit;resize:vertical" placeholder="Opcional..."></textarea>
       </div>
       <div class="modal-footer">
         <button class="btn" onclick="fecharModal('transacaoModal')">Cancelar</button>
@@ -194,13 +207,38 @@
     </div>
   </div>
 
-  <script>
+  <div id="moverModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">Mover Despesa</div>
+      <div id="moverInfo" style="font-size:12px;color:var(--text-light);margin-bottom:12px"></div>
+      <div class="form-field">
+        <label>Mover para o mês</label>
+        <select id="moverMesSelect"></select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="fecharModal('moverModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarMover()">Mover</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="fechamentoAlertModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">⚠️ Despesas fora do corte</div>
+      <div id="fechamentoAlertInfo" style="font-size:12px;margin-bottom:12px"></div>
+      <div id="fechamentoAlertLista" style="max-height:160px;overflow-y:auto;margin-bottom:12px;font-size:11px"></div>
+      <div class="modal-footer">
+        <button class="btn" onclick="fecharModal('fechamentoAlertModal')">Ignorar</button>
+        <button class="btn btn-primary" onclick="moverDespesasCorte()">Mover todas</button>
+      </div>
+    </div>
+  </div>
     const SUPABASE_URL = 'https://umeinujkrfsemtgfvbvs.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZWludWprcmZzZW10Z2Z2YnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MDM1ODksImV4cCI6MjA5MTQ3OTU4OX0.1zD91A2A0eF5e3IJuweh2rZsUSFsUEb6B9yZhwAuXVc';
     
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    const state = {usuario:'',email:'',cartao:'amex',mes:null,meses:[],transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
+    const state = {usuario:'',email:'',cartao:'amex',mes:null,meses:[],transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{},v:4};
     const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     let edicaoMes = null;
 
@@ -378,6 +416,7 @@
       fecharModal('fechamentoModal');
       renderMeses();
       renderDashboard();
+      verificarDespesasCorte(edicaoMes,dia);
     }
 
     function fmt(v){return'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
@@ -408,7 +447,9 @@
       let y=20;
       const ln=(n=5)=>{y+=n;};
       const rule=()=>{doc.setDrawColor(200);doc.line(mar,y,W-mar,y);ln(4);};
+      const newPageIfNeeded=(h=10)=>{if(y+h>275){doc.addPage();y=20;}};
 
+      // Cabeçalho
       doc.setFontSize(16);doc.setFont('helvetica','bold');
       doc.text('Relatório de Despesas',mar,y);ln(7);
       doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(100);
@@ -416,45 +457,86 @@
       doc.text('Gerado em '+new Date().toLocaleDateString('pt-BR'),W-mar,y,{align:'right'});
       doc.setTextColor(0);ln(5);rule();
 
-      ['inter','amex'].forEach(c=>{
-        const trans=state.transacoes.filter(t=>t.mes===mes&&t.cartao===c).sort((a,b)=>a.data>b.data?1:-1);
-        const total=trans.reduce((s,t)=>s+t.valor,0);
-        const minhas=trans.reduce((s,t)=>s+(t.valor*(t.percent||100)/100),0);
-        const delas=total-minhas;
-        const cor=c==='inter'?[255,107,0]:[100,100,100];
-        doc.setFillColor(...cor);
+      // Todas as transações do mês
+      const todasTrans=state.transacoes.filter(t=>t.mes===mes);
+
+      // Seção por pessoa
+      const pessoas=[...new Set(['Você',...state.pessoas.filter(p=>p!=='Você')])];
+      // Adiciona pessoas que aparecem em transações mas podem não estar na lista
+      todasTrans.forEach(t=>{if(t.divide&&!pessoas.includes(t.divide))pessoas.push(t.divide);});
+
+      pessoas.forEach(pessoa=>{
+        // Transações onde esta pessoa tem participação
+        const transP=todasTrans.filter(t=>{
+          if(pessoa==='Você')return true; // Você vê tudo
+          return t.divide===pessoa;
+        });
+        if(transP.length===0)return;
+
+        newPageIfNeeded(20);
+        // Header pessoa
+        doc.setFillColor(40,40,40);
         doc.roundedRect(mar,y-4,W-mar*2,8,2,2,'F');
-        doc.setTextColor(255);doc.setFontSize(10);doc.setFont('helvetica','bold');
-        doc.text(c.toUpperCase(),mar+3,y+1);
-        doc.text('Total: '+fmt(total)+'   Suas: '+fmt(minhas)+'   Delas: '+fmt(delas),W-mar-3,y+1,{align:'right'});
-        doc.setTextColor(0);ln(10);
-        if(trans.length===0){
-          doc.setFontSize(9);doc.setFont('helvetica','italic');doc.setTextColor(150);
-          doc.text('Sem transacoes neste mes.',mar,y);doc.setTextColor(0);ln(8);
-        } else {
+        doc.setTextColor(255);doc.setFontSize(11);doc.setFont('helvetica','bold');
+        doc.text('👤 '+pessoa,mar+3,y+1);
+        doc.setTextColor(0);ln(12);
+
+        ['inter','amex'].forEach(c=>{
+          const trans=transP.filter(t=>t.cartao===c).sort((a,b)=>a.data>b.data?1:-1);
+          if(trans.length===0)return;
+          const totalCartao=trans.reduce((s,t)=>s+t.valor,0);
+          // Valor da pessoa neste cartão
+          const valorPessoa=trans.reduce((s,t)=>{
+            if(pessoa==='Você')return s+(t.valor*(t.percent||100)/100);
+            if(t.divide===pessoa)return s+(t.valor*(100-(t.percent||100))/100);
+            return s;
+          },0);
+          const cor=c==='inter'?[255,107,0]:[100,100,100];
+          newPageIfNeeded(12);
+          doc.setFillColor(...cor);
+          doc.roundedRect(mar,y-4,W-mar*2,7,1.5,1.5,'F');
+          doc.setTextColor(255);doc.setFontSize(9);doc.setFont('helvetica','bold');
+          doc.text(c.toUpperCase(),mar+3,y);
+          doc.text('Total: '+fmt(totalCartao)+'   '+pessoa+': '+fmt(valorPessoa),W-mar-3,y,{align:'right'});
+          doc.setTextColor(0);ln(9);
+
           doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(120);
           doc.text('DATA',mar,y);doc.text('ESTABELECIMENTO',mar+18,y);
-          doc.text('VALOR',mar+115,y,{align:'right'});doc.text('DIVIDE',mar+120,y);
+          doc.text('VALOR',mar+100,y,{align:'right'});doc.text('DIVIDE',mar+105,y);doc.text('OBS',mar+145,y);
           doc.setTextColor(0);ln(4);rule();
-          doc.setFont('helvetica','normal');doc.setFontSize(9);
+          doc.setFont('helvetica','normal');doc.setFontSize(8);
           trans.forEach(t=>{
-            if(y>270){doc.addPage();y=20;}
+            newPageIfNeeded(6);
             const dt=t.data?t.data.split('-').reverse().join('/'):'';
             const div=t.divide?t.divide+' '+(100-(t.percent||100))+'%':'';
+            const tipo=t.parcelaNum?` [${t.parcelaNum}/${t.parcelaTotal}]`:t.recorrente?' [🔁]':'';
             doc.text(dt,mar,y);
-            doc.text((t.estab||'').substring(0,38),mar+18,y);
-            doc.text(fmt(t.valor),mar+115,y,{align:'right'});
-            doc.text(div,mar+120,y);
+            doc.text((t.estab||'').substring(0,30)+tipo,mar+18,y);
+            doc.text(fmt(t.valor),mar+100,y,{align:'right'});
+            doc.text(div.substring(0,20),mar+105,y);
+            doc.text((t.obs||'').substring(0,20),mar+145,y);
             ln(5);
           });
           rule();
           doc.setFont('helvetica','bold');doc.setFontSize(9);
-          doc.text('Total: '+fmt(total),mar,y);
-          doc.text('Suas: '+fmt(minhas),mar+55,y);
-          doc.text('Delas: '+fmt(delas),mar+110,y);
-          ln(12);
-        }
+          doc.text('Total cartão: '+fmt(totalCartao),mar,y);
+          doc.text(pessoa+': '+fmt(valorPessoa),mar+80,y);
+          ln(10);
+        });
+
+        // Resumo da pessoa
+        newPageIfNeeded(14);
+        const totalPessoa=todasTrans.reduce((s,t)=>{
+          if(pessoa==='Você')return s+(t.valor*(t.percent||100)/100);
+          if(t.divide===pessoa)return s+(t.valor*(100-(t.percent||100))/100);
+          return s;
+        },0);
+        doc.setFont('helvetica','bold');doc.setFontSize(10);
+        doc.setDrawColor(200);doc.line(mar,y,W-mar,y);ln(5);
+        doc.text('Total geral de '+pessoa+': '+fmt(totalPessoa),mar,y);
+        ln(12);
       });
+
       doc.save('relatorio_'+mes+'.pdf');
     }
 
@@ -487,15 +569,25 @@
             <th style="text-align:left;padding:6px;font-size:10px;color:var(--text-light)">ESTABELECIMENTO</th>
             <th style="text-align:right;padding:6px;font-size:10px;color:var(--text-light)">VALOR</th>
             <th style="text-align:left;padding:6px;font-size:10px;color:var(--text-light)">DIVIDE</th>
+            <th style="text-align:center;padding:6px;font-size:10px;color:var(--text-light)">TIPO</th>
             <th style="padding:6px"></th>
           </tr></thead><tbody>
-          ${[...trans].sort((a,b)=>a.data>b.data?-1:1).map(t=>`<tr style="border-bottom:1px solid var(--gray-100)">
-            <td style="padding:6px;color:var(--text-light);white-space:nowrap">${t.data?t.data.split('-').reverse().join('/'):'—'}</td>
-            <td style="padding:6px;font-weight:500">${t.estab}</td>
-            <td style="padding:6px;text-align:right;font-weight:600;white-space:nowrap">${fmt(t.valor)}</td>
-            <td style="padding:6px;color:var(--text-light);font-size:11px">${t.divide?t.divide+' ('+(100-(t.percent||100))+'% deles)':''}</td>
-            <td style="padding:6px;text-align:center"><button onclick="excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;transition:color .2s" onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#bbb'" title="Excluir">🗑</button></td>
-          </tr>`).join('')}
+          ${[...trans].sort((a,b)=>a.data>b.data?-1:1).map(t=>{
+            const tipoTag=t.recorrente?`<span style="font-size:9px;background:#e8f4ff;color:#2d7dd2;padding:2px 5px;border-radius:3px;white-space:nowrap">🔁 Recor.</span>`:
+              t.parcelaNum?`<span style="font-size:9px;background:#f0f0f0;color:var(--text-light);padding:2px 5px;border-radius:3px;white-space:nowrap">${t.parcelaNum}/${t.parcelaTotal}</span>`:'';
+            const obsIcon=t.obs?`<span title="${t.obs.replace(/"/g,'&quot;')}" style="cursor:help;font-size:12px;margin-left:3px" >💬</span>`:'';
+            return `<tr style="border-bottom:1px solid var(--gray-100)">
+              <td style="padding:6px;color:var(--text-light);white-space:nowrap">${t.data?t.data.split('-').reverse().join('/'):'—'}</td>
+              <td style="padding:6px;font-weight:500">${t.estab}${obsIcon}</td>
+              <td style="padding:6px;text-align:right;font-weight:600;white-space:nowrap">${fmt(t.valor)}</td>
+              <td style="padding:6px;color:var(--text-light);font-size:11px">${t.divide?t.divide+' ('+(100-(t.percent||100))+'%)':''}</td>
+              <td style="padding:6px;text-align:center">${tipoTag}</td>
+              <td style="padding:6px;text-align:center;white-space:nowrap">
+                <button onclick="abrirMover('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#555'" onmouseout="this.style.color='#bbb'" title="Mover">↕</button>
+                <button onclick="excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;transition:color .2s" onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#bbb'" title="Excluir">🗑</button>
+              </td>
+            </tr>`;
+          }).join('')}
           </tbody></table>`;
       }
 
@@ -529,19 +621,19 @@
     }
 
     function abrirNovaTransacao(){
-      // Limpar tudo
       document.getElementById('smsInput').value='';
       document.getElementById('transEstab').value='';
       document.getElementById('transValor').value='';
       document.getElementById('transDivide').value='';
+      document.getElementById('transObs').value='';
       document.getElementById('transRecorrente').checked=false;
       document.getElementById('transParcelado').checked=false;
       document.getElementById('parceladoDiv').style.display='none';
+      document.getElementById('parcelasCustomDiv').style.display='none';
       document.getElementById('transParcelas').value=2;
       document.getElementById('transValorParcela').value='';
-      document.getElementById('transPercent').value=100;
-      document.getElementById('percentLabel').textContent='100';
-      // Data de hoje (horário local)
+      document.getElementById('transPercent').value=50;
+      document.getElementById('transPercentDeles').value=50;
       const _h=new Date();
       document.getElementById('transData').value=_h.getFullYear()+'-'+String(_h.getMonth()+1).padStart(2,'0')+'-'+String(_h.getDate()).padStart(2,'0');
       document.getElementById('transCartao').value=state.cartao;
@@ -562,7 +654,8 @@
       const n=parseInt(document.getElementById('transParcelas').value)||1;
       const parcela=Math.round(total/n*100)/100;
       document.getElementById('transValorParcela').value=parcela.toFixed(2);
-      document.getElementById('parcelaInfo').textContent=`Criará ${n} lançamento${n>1?'s':''} de ${fmt(parcela)}`;
+      document.getElementById('parcelaInfo').innerHTML=`Criará ${n} lançamento${n>1?'s':''} de ${fmt(parcela)} · <u>Ajustar parcelas individualmente</u>`;
+      if(document.getElementById('parcelasCustomDiv').style.display!=='none')renderParcelasCustom();
     }
 
     function toggleRecorrencia(){
@@ -599,7 +692,15 @@
     }
 
     function togglePercent(){
-      document.getElementById('proporcaoDiv').style.display=document.getElementById('transDivide').value?'block':'none';
+      const show=!!document.getElementById('transDivide').value;
+      document.getElementById('proporcaoDiv').style.display=show?'block':'none';
+      if(show){document.getElementById('transPercent').value=50;document.getElementById('transPercentDeles').value=50;}
+    }
+
+    function sincPercent(quem,val){
+      const v=Math.min(100,Math.max(0,parseInt(val)||0));
+      if(quem==='meu'){document.getElementById('transPercentDeles').value=100-v;}
+      else{document.getElementById('transPercent').value=100-v;}
     }
 
     function salvarTransacao(){
@@ -608,40 +709,134 @@
         const valorRaw=document.getElementById('transValor').value;
         const valor=parseFloat(valorRaw);
         const data=document.getElementById('transData').value;
-        console.log('salvarTransacao:', {estab, valorRaw, valor, data, usuario: state.usuario});
+        const obs=document.getElementById('transObs').value.trim();
         if(!estab||!valor||!data){alert('Preencha estabelecimento, valor e data');return}
         const recorrente=document.getElementById('transRecorrente').checked;
         const dataFinal=document.getElementById('transDataFinal').value;
         if(recorrente&&!dataFinal){alert('Data final obrigatória');return}
         const parcelado=document.getElementById('transParcelado').checked;
         const nParcelas=parcelado?parseInt(document.getElementById('transParcelas').value)||1:1;
-        const valorParcela=parcelado?Math.round(valor/nParcelas*100)/100:valor;
+        const cartao=document.getElementById('transCartao').value;
+        const divide=document.getElementById('transDivide').value;
+        const percent=divide?parseInt(document.getElementById('transPercent').value)||50:100;
         const parsearData=s=>{const[y,m,dia]=s.split('-').map(Number);return new Date(y,m-1,dia);};
+        // Pegar valores customizados de parcelas se existirem
+        const customInputs=document.querySelectorAll('.parcela-custom-input');
+        const valoresCustom=customInputs.length===nParcelas?Array.from(customInputs).map(i=>parseFloat(i.value)||0):null;
+        const grupId=String(Date.now())+String(Math.floor(Math.random()*9999));
         let d=parsearData(data);
-        // Se parcelado, ignora recorrente e usa nParcelas
         let count=0;
-        const maxIter=parcelado?nParcelas:(recorrente?120:1);
         const fim=(!parcelado&&recorrente)?parsearData(dataFinal):null;
         while(parcelado?count<nParcelas:(fim?d<=fim:count<1)){
-          const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-          state.transacoes.push({id:String(Date.now())+String(Math.floor(Math.random()*9999)),mes:mesId,estab,valor:parcelado?valorParcela:valor,data,cartao:document.getElementById('transCartao').value,divide:document.getElementById('transDivide').value,percent:parseInt(document.getElementById('transPercent').value)||100});
+          // Determinar mês correto baseado em fechamento
+          const fechamento=state.fechamentos[`${cartao}-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`]||(cartao==='inter'?state.config.inter:state.config.amex);
+          const diaCompra=d.getDate();
+          let mesBase=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+          // Se dia da compra > fechamento, vai para o mês seguinte
+          let mesId=mesBase;
+          if(count>0||!parcelado){// primeira parcela/único usa data real; parcelas seguintes usam mês sequencial
+            // para parcelado count>0 já avançamos o mês, então não re-aplica regra
+          } else {
+            if(diaCompra>fechamento){
+              const nd=new Date(d.getFullYear(),d.getMonth()+1,1);
+              mesId=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0');
+            }
+          }
+          const valorParcela=valoresCustom?valoresCustom[count]:parcelado?Math.round(valor/nParcelas*100)/100:valor;
+          state.transacoes.push({
+            id:String(Date.now())+String(Math.floor(Math.random()*9999)),
+            mes:mesId,estab,valor:valorParcela,data:data,cartao,divide,percent,obs,
+            grupId:parcelado||recorrente?grupId:null,
+            parcelaNum:parcelado?count+1:null,
+            parcelaTotal:parcelado?nParcelas:null,
+            recorrente:recorrente&&!parcelado
+          });
           if(!state.meses.includes(mesId))state.meses.push(mesId);
           d.setMonth(d.getMonth()+1);
           count++;
-          if(count>120){alert('Loop infinito detectado, verifique as datas');return}
+          if(count>120){alert('Loop infinito detectado');return}
         }
-        console.log('Transacoes adicionadas:', count, '| Total:', state.transacoes.length);
         salvarDados();
         fecharModal('transacaoModal');
         renderMeses();
         renderDashboard();
-      } catch(e) {
-        alert('Erro ao salvar: '+e.message);
-        console.error(e);
-      }
+      } catch(e){alert('Erro ao salvar: '+e.message);console.error(e);}
     }
 
-    function abrirPessoas(){
+    function toggleParcelasCustom(){
+      const div=document.getElementById('parcelasCustomDiv');
+      const show=div.style.display==='none';
+      div.style.display=show?'block':'none';
+      if(show)renderParcelasCustom();
+    }
+
+    function renderParcelasCustom(){
+      const n=parseInt(document.getElementById('transParcelas').value)||2;
+      const total=parseFloat(document.getElementById('transValor').value)||0;
+      const base=Math.round(total/n*100)/100;
+      let html='<div style="font-size:10px;color:var(--text-light);margin-bottom:6px">Ajuste os valores individuais:</div>';
+      for(let i=0;i<n;i++){
+        html+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-size:11px;min-width:60px;color:var(--text-light)">Parcela ${i+1}</span>
+          <input class="parcela-custom-input" type="number" step="0.01" value="${base.toFixed(2)}" style="padding:4px 6px;border:1px solid var(--border);border-radius:3px;font-size:11px;width:100px">
+        </div>`;
+      }
+      document.getElementById('parcelasCustomList').innerHTML=html;
+    }
+
+    let _moverTransId=null;
+    function abrirMover(id){
+      _moverTransId=id;
+      const t=state.transacoes.find(x=>x.id===id);
+      if(!t)return;
+      document.getElementById('moverInfo').textContent=`"${t.estab}" — ${fmt(t.valor)} (${t.mes})`;
+      const sorted=[...state.meses].sort();
+      document.getElementById('moverMesSelect').innerHTML=sorted.map(m=>`<option value="${m}" ${m===t.mes?'selected':''}>${mesesNomes[parseInt(m.split('-')[1])-1]} ${m.split('-')[0]}</option>`).join('');
+      document.getElementById('moverModal').classList.add('active');
+    }
+
+    function confirmarMover(){
+      const novoMes=document.getElementById('moverMesSelect').value;
+      const t=state.transacoes.find(x=>x.id===_moverTransId);
+      if(!t)return;
+      t.mes=novoMes;
+      if(!state.meses.includes(novoMes))state.meses.push(novoMes);
+      salvarDados();
+      fecharModal('moverModal');
+      renderMeses();
+      renderDashboard();
+    }
+
+    let _fechamentoAlertPendente=null;
+    function verificarDespesasCorte(mesId,novoFechamento){
+      const cartao=state.cartao;
+      const afetadas=state.transacoes.filter(t=>{
+        if(t.mes!==mesId||t.cartao!==cartao)return false;
+        const dia=t.data?parseInt(t.data.split('-')[2]):0;
+        return dia>novoFechamento;
+      });
+      if(afetadas.length===0)return;
+      const mesParts=mesId.split('-');
+      const mesNext=new Date(parseInt(mesParts[0]),parseInt(mesParts[1]),1);
+      const mesProx=mesNext.getFullYear()+'-'+String(mesNext.getMonth()+1).padStart(2,'0');
+      _fechamentoAlertPendente={ids:afetadas.map(t=>t.id),mesProx};
+      document.getElementById('fechamentoAlertInfo').innerHTML=`<b>${afetadas.length} despesa(s)</b> têm data após o dia ${novoFechamento} e deveriam ir para <b>${mesesNomes[mesNext.getMonth()]} ${mesNext.getFullYear()}</b>.`;
+      document.getElementById('fechamentoAlertLista').innerHTML=afetadas.map(t=>`<div style="padding:3px 0;border-bottom:1px solid var(--gray-100)">${t.data?t.data.split('-').reverse().join('/'):'?'} · ${t.estab} · ${fmt(t.valor)}</div>`).join('');
+      document.getElementById('fechamentoAlertModal').classList.add('active');
+    }
+
+    function moverDespesasCorte(){
+      if(!_fechamentoAlertPendente)return;
+      const {ids,mesProx}=_fechamentoAlertPendente;
+      ids.forEach(id=>{
+        const t=state.transacoes.find(x=>x.id===id);
+        if(t){t.mes=mesProx;if(!state.meses.includes(mesProx))state.meses.push(mesProx);}
+      });
+      salvarDados();
+      fecharModal('fechamentoAlertModal');
+      renderMeses();
+      renderDashboard();
+    }
       document.getElementById('pessoasModal').classList.add('active');
       renderPessoas();
     }
