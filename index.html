@@ -319,9 +319,14 @@
     }
 
     function init(){
-      if(!state.mes&&state.meses.length>0){
+      const hoje=new Date();
+      const mesAtual=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+      // Sempre começa no mês atual se existir, senão o mais recente
+      if(state.meses.includes(mesAtual)){
+        state.mes=mesAtual;
+      } else {
         const sorted=[...state.meses].sort();
-        state.mes=sorted[sorted.length-1];
+        state.mes=sorted[sorted.length-1]||null;
       }
       renderMeses();
       renderDashboard();
@@ -399,22 +404,6 @@
       renderMeses();
       renderDashboard();
     }
-
-    // Event delegation para sidebar de meses
-    document.addEventListener('click',function(e){
-      const el=e.target.closest('[data-action]');
-      if(!el)return;
-      const action=el.dataset.action;
-      const mes=el.dataset.mes;
-      if(action==='selMes'){selecionarMes(mes);}
-      else if(action==='fechamento'){e.stopPropagation();abrirFechamento(mes);}
-      else if(action==='remMes'){e.stopPropagation();removerMes(mes);}
-      else if(action==='toggleAnt'){toggleAnteriores();}
-      else if(action==='toggleFut'){toggleFuturos();}
-      else if(action==='excluir'){excluirTransacao(el.dataset.id);}
-      else if(action==='mover'){abrirMover(el.dataset.id);}
-      else if(action==='editar'){abrirEditarTransacao(el.dataset.id);}
-    });
 
     function selecionarMes(id){
       state.mes=id;
@@ -976,6 +965,23 @@
 
     window.addEventListener('load', () => {
       atualizarRelogio();
+
+      // Event delegation único — trata todos os cliques com data-action
+      document.addEventListener('click', function(e){
+        const el=e.target.closest('[data-action]');
+        if(!el)return;
+        e.stopPropagation();
+        const action=el.dataset.action;
+        if(action==='selMes')    selecionarMes(el.dataset.mes);
+        else if(action==='fechamento') abrirFechamento(el.dataset.mes);
+        else if(action==='remMes')     removerMes(el.dataset.mes);
+        else if(action==='toggleAnt')  toggleAnteriores();
+        else if(action==='toggleFut')  toggleFuturos();
+        else if(action==='excluir')    excluirTransacao(el.dataset.id);
+        else if(action==='mover')      abrirMover(el.dataset.id);
+        else if(action==='editar')     abrirEditarTransacao(el.dataset.id);
+      });
+
       sbClient.auth.onAuthStateChange((event, session) => {
         if(session){
           state.usuario = session.user.id;
