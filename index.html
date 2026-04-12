@@ -361,7 +361,7 @@
       const temTrans=state.transacoes.some(t=>t.mes===id);
       return `<div class="nav-item ${ativo?'active':''}" onclick="selecionarMes('${id}')">
         <div class="nav-wrapper"><span class="nav-icon">${mesesNomes[d.getMonth()]}</span><span>${label}</span></div>
-        <div style="display:flex;gap:2px;align-items:center">
+        <div style="display:flex;gap:2px;align-items:center" onclick="event.stopPropagation()">
           <button class="edit-btn" onclick="abrirFechamento('${id}',event)" title="Fechamento">✏️</button>
           ${!temTrans?`<button class="edit-btn" onclick="removerMes('${id}',event)" title="Remover" style="font-size:14px;color:#c00">×</button>`:''}
         </div>
@@ -576,11 +576,11 @@
           ${[...trans].sort((a,b)=>a.data>b.data?-1:1).map(t=>{
             const pctDeles=100-(t.percent??100);
             const divideLabel=t.divide&&pctDeles>0?`${t.divide} (${pctDeles}%)`:'';
-            const tipoTag=t.recorrente
-              ?`<span style="font-size:9px;background:#e8f4ff;color:#2d7dd2;padding:2px 5px;border-radius:3px;white-space:nowrap">🔁</span>`
-              :t.parcelaNum
-                ?`<span style="font-size:9px;background:#f0f0f0;color:var(--text-light);padding:2px 5px;border-radius:3px;white-space:nowrap">${t.parcelaNum}/${t.parcelaTotal}</span>`
-                :(t.grupId?`<span style="font-size:9px;background:#e8f4ff;color:#2d7dd2;padding:2px 5px;border-radius:3px;white-space:nowrap">🔁</span>`:'');
+            const tipoTag=t.parcelaNum
+              ?`<span style="font-size:9px;background:#f0f0f0;color:var(--text-light);padding:2px 5px;border-radius:3px;white-space:nowrap">${t.parcelaNum}/${t.parcelaTotal}</span>`
+              :t.recorrente
+                ?`<span style="font-size:9px;background:#e8f4ff;color:#2d7dd2;padding:2px 5px;border-radius:3px;white-space:nowrap">🔁 Recor.</span>`
+                :'';
             const obsIcon=t.obs?`<span title="${t.obs.replace(/"/g,'&quot;')}" style="cursor:help;font-size:12px;margin-left:3px">💬</span>`:'';
             return `<tr style="border-bottom:1px solid var(--gray-100)">
               <td style="padding:6px;color:var(--text-light);white-space:nowrap">${t.data?t.data.split('-').reverse().join('/'):'—'}</td>
@@ -589,9 +589,9 @@
               <td style="padding:6px;color:var(--text-light);font-size:11px">${divideLabel}</td>
               <td style="padding:6px;text-align:center">${tipoTag}</td>
               <td style="padding:6px;text-align:center;white-space:nowrap">
-                <button onclick="abrirEditarTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#bbb'" title="Editar">✏️</button>
-                <button onclick="abrirMover('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#555'" onmouseout="this.style.color='#bbb'" title="Mover">↕</button>
-                <button onclick="excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;transition:color .2s" onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#bbb'" title="Excluir">🗑</button>
+                <button onclick="event.stopPropagation();abrirEditarTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#bbb'" title="Editar">✏️</button>
+                <button onclick="event.stopPropagation();abrirMover('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#555'" onmouseout="this.style.color='#bbb'" title="Mover">↕</button>
+                <button onclick="event.stopPropagation();excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;transition:color .2s" onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#bbb'" title="Excluir">🗑</button>
               </td>
             </tr>`;
           }).join('')}
