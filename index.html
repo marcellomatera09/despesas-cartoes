@@ -332,25 +332,40 @@
       return state.fechamentos[key]||(state.cartao==='inter'?state.config.inter:state.config.amex);
     }
 
-    let mostrarAnteriores = false;
+    let mostrarAnteriores=false, mostrarFuturos=false;
 
     function renderMeses(){
-      const hoje = new Date();
-      const mesAtual = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+      const hoje=new Date();
+      const mesAtual=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+      const proxMes=new Date(hoje.getFullYear(),hoje.getMonth()+1,1);
+      const mesProximo=proxMes.getFullYear()+'-'+String(proxMes.getMonth()+1).padStart(2,'0');
       const sorted=[...state.meses].sort();
-      const anteriores = sorted.filter(id=>id<mesAtual);
-      const atuaisEFuturos = sorted.filter(id=>id>=mesAtual);
+      const anteriores=sorted.filter(id=>id<mesAtual);
+      const visiveis=sorted.filter(id=>id===mesAtual||id===mesProximo);
+      const futuros=sorted.filter(id=>id>mesProximo);
       let html='';
+      // Anteriores
       if(anteriores.length>0){
-        html+=`<div class="nav-item" onclick="toggleAnteriores()" style="opacity:.6;font-size:10px">
-          <div class="nav-wrapper"><span class="nav-icon">${mostrarAnteriores?'▲':'▼'}</span><span>${mostrarAnteriores?'Ocultar anteriores':anteriores.length+' mês(es) anterior(es)'}</span></div>
+        html+=`<div class="nav-item" data-action="toggleAnt" style="opacity:.6;font-size:10px;cursor:pointer">
+          <div class="nav-wrapper"><span class="nav-icon">${mostrarAnteriores?'▲':'▼'}</span><span>${mostrarAnteriores?'Ocultar anteriores':anteriores.length+' anterior(es)'}</span></div>
         </div>`;
         if(mostrarAnteriores){
           anteriores.forEach(id=>{ html+=renderMesItem(id); });
           html+=`<div style="height:1px;background:rgba(255,255,255,.08);margin:4px 0"></div>`;
         }
       }
-      atuaisEFuturos.forEach(id=>{ html+=renderMesItem(id); });
+      // Atual + próximo
+      visiveis.forEach(id=>{ html+=renderMesItem(id); });
+      // Futuros
+      if(futuros.length>0){
+        html+=`<div class="nav-item" data-action="toggleFut" style="opacity:.6;font-size:10px;cursor:pointer">
+          <div class="nav-wrapper"><span class="nav-icon">${mostrarFuturos?'▲':'▼'}</span><span>${mostrarFuturos?'Ocultar futuros':futuros.length+' futuro(s)'}</span></div>
+        </div>`;
+        if(mostrarFuturos){
+          html+=`<div style="height:1px;background:rgba(255,255,255,.08);margin:4px 0"></div>`;
+          futuros.forEach(id=>{ html+=renderMesItem(id); });
+        }
+      }
       document.getElementById('mesesList').innerHTML=html;
     }
 
@@ -359,30 +374,47 @@
       const label=mesesNomes[d.getMonth()]+' '+String(d.getFullYear()).slice(-2);
       const ativo=state.mes===id;
       const temTrans=state.transacoes.some(t=>t.mes===id);
-      return `<div class="nav-item ${ativo?'active':''}" onclick="selecionarMes('${id}')">
-        <div class="nav-wrapper"><span class="nav-icon">${mesesNomes[d.getMonth()]}</span><span>${label}</span></div>
-        <div style="display:flex;gap:2px;align-items:center" onclick="event.stopPropagation()">
-          <button class="edit-btn" onclick="abrirFechamento('${id}',event)" title="Fechamento">✏️</button>
-          ${!temTrans?`<button class="edit-btn" onclick="removerMes('${id}',event)" title="Remover" style="font-size:14px;color:#c00">×</button>`:''}
+      return `<div class="nav-item ${ativo?'active':''}" data-action="selMes" data-mes="${id}">
+        <div class="nav-wrapper" style="pointer-events:none"><span class="nav-icon">${mesesNomes[d.getMonth()]}</span><span>${label}</span></div>
+        <div style="display:flex;gap:2px;align-items:center">
+          <button class="edit-btn" data-action="fechamento" data-mes="${id}" title="Fechamento">✏️</button>
+          ${!temTrans?`<button class="edit-btn" data-action="remMes" data-mes="${id}" title="Remover" style="font-size:14px;color:#c00">×</button>`:''}
         </div>
       </div>`;
     }
 
-    function toggleAnteriores(){
-      mostrarAnteriores=!mostrarAnteriores;
-      renderMeses();
-    }
+    function toggleAnteriores(){mostrarAnteriores=!mostrarAnteriores;renderMeses();}
+    function toggleFuturos(){mostrarFuturos=!mostrarFuturos;renderMeses();}
 
-    function removerMes(id,e){
-      e.stopPropagation();
+    function removerMes(id){
       const temTrans=state.transacoes.some(t=>t.mes===id);
       if(temTrans){alert('Não é possível remover um mês com transações.');return}
+      if(!confirm('Remover mês '+id+'?'))return;
       state.meses=state.meses.filter(m=>m!==id);
-      if(state.mes===id)state.mes=null;
+      if(state.mes===id){
+        const sorted=[...state.meses].sort();
+        state.mes=sorted[sorted.length-1]||null;
+      }
       salvarDados();
       renderMeses();
       renderDashboard();
     }
+
+    // Event delegation para sidebar de meses
+    document.addEventListener('click',function(e){
+      const el=e.target.closest('[data-action]');
+      if(!el)return;
+      const action=el.dataset.action;
+      const mes=el.dataset.mes;
+      if(action==='selMes'){selecionarMes(mes);}
+      else if(action==='fechamento'){e.stopPropagation();abrirFechamento(mes);}
+      else if(action==='remMes'){e.stopPropagation();removerMes(mes);}
+      else if(action==='toggleAnt'){toggleAnteriores();}
+      else if(action==='toggleFut'){toggleFuturos();}
+      else if(action==='excluir'){excluirTransacao(el.dataset.id);}
+      else if(action==='mover'){abrirMover(el.dataset.id);}
+      else if(action==='editar'){abrirEditarTransacao(el.dataset.id);}
+    });
 
     function selecionarMes(id){
       state.mes=id;
@@ -398,8 +430,7 @@
       renderDashboard();
     }
 
-    function abrirFechamento(mesId,e){
-      e.stopPropagation();
+    function abrirFechamento(mesId){
       const d=new Date(mesId+'-01');
       const label=d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
       document.getElementById('fechamentoLabel').textContent=`${state.cartao.toUpperCase()} - ${label}`;
@@ -589,9 +620,9 @@
               <td style="padding:6px;color:var(--text-light);font-size:11px">${divideLabel}</td>
               <td style="padding:6px;text-align:center">${tipoTag}</td>
               <td style="padding:6px;text-align:center;white-space:nowrap">
-                <button onclick="event.stopPropagation();abrirEditarTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#bbb'" title="Editar">✏️</button>
-                <button onclick="event.stopPropagation();abrirMover('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;transition:color .2s" onmouseover="this.style.color='#555'" onmouseout="this.style.color='#bbb'" title="Mover">↕</button>
-                <button onclick="event.stopPropagation();excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;transition:color .2s" onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#bbb'" title="Excluir">🗑</button>
+                <button data-action="editar" data-id="${t.id}" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px" title="Editar">✏️</button>
+                <button data-action="mover" data-id="${t.id}" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px" title="Mover">↕</button>
+                <button data-action="excluir" data-id="${t.id}" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px" title="Excluir">🗑</button>
               </td>
             </tr>`;
           }).join('')}
