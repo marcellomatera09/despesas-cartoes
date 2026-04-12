@@ -183,7 +183,7 @@
     
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    const state = {usuario:'',email:'',cartao:'inter',mes:null,transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
+    const state = {usuario:'',email:'',cartao:'inter',mes:null,meses:[],transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
     const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     let edicaoMes = null;
 
@@ -232,12 +232,24 @@
         state.pessoas = parsed.pessoas||['Você'];
         state.config = parsed.config||{inter:5,amex:28};
         state.fechamentos = parsed.fechamentos||{};
+        state.meses = parsed.meses||gerarMesesPadrao();
+      } else {
+        state.meses = gerarMesesPadrao();
       }
       renderPessoasSelect();
     }
 
+    function gerarMesesPadrao(){
+      const meses=[];
+      for(let i=11;i>=0;i--){
+        const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);
+        meses.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
+      }
+      return meses;
+    }
+
     function salvarDados(){
-      localStorage.setItem('despesas_'+state.usuario, JSON.stringify({transacoes:state.transacoes,pessoas:state.pessoas,config:state.config,fechamentos:state.fechamentos}));
+      localStorage.setItem('despesas_'+state.usuario, JSON.stringify({transacoes:state.transacoes,pessoas:state.pessoas,config:state.config,fechamentos:state.fechamentos,meses:state.meses}));
     }
 
     function renderPessoasSelect(){
@@ -247,6 +259,10 @@
     }
 
     function init(){
+      if(!state.mes&&state.meses.length>0){
+        const sorted=[...state.meses].sort();
+        state.mes=sorted[sorted.length-1];
+      }
       renderMeses();
       renderDashboard();
     }
@@ -257,17 +273,62 @@
     }
 
     function renderMeses(){
+      const sorted=[...state.meses].sort();
       let html='';
-      for(let i=11;i>=0;i--){
-        const d=new Date();d.setMonth(d.getMonth()-i);
-        const id=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      // Botão: adicionar mês anterior ao mais antigo
+      html+=`<div class="nav-item" onclick="adicionarMes('antes')" title="Adicionar mês anterior" style="opacity:.6;font-size:10px">
+        <div class="nav-wrapper"><span class="nav-icon">＋</span><span>Mês anterior</span></div>
+      </div>`;
+      // Lista de meses (do mais antigo ao mais recente)
+      sorted.forEach(id=>{
+        const d=new Date(id+'-15');
         const label=mesesNomes[d.getMonth()]+' '+String(d.getFullYear()).slice(-2);
-        html+=`<div class="nav-item ${!state.mes||state.mes===id?'active':''}" onclick="selecionarMes('${id}')">
+        const ativo=!state.mes&&id===sorted[sorted.length-1]?true:state.mes===id;
+        const temTrans=state.transacoes.some(t=>t.mes===id);
+        html+=`<div class="nav-item ${ativo?'active':''}" onclick="selecionarMes('${id}')">
           <div class="nav-wrapper"><span class="nav-icon">${mesesNomes[d.getMonth()]}</span><span>${label}</span></div>
-          <button class="edit-btn" onclick="abrirFechamento('${id}',event)">✏️</button>
+          <div style="display:flex;gap:2px;align-items:center">
+            <button class="edit-btn" onclick="abrirFechamento('${id}',event)" title="Fechamento">✏️</button>
+            ${!temTrans?`<button class="edit-btn" onclick="removerMes('${id}',event)" title="Remover mês" style="font-size:14px;color:#c00">×</button>`:''}
+          </div>
         </div>`;
-      }
+      });
+      // Botão: adicionar mês seguinte ao mais recente
+      html+=`<div class="nav-item" onclick="adicionarMes('depois')" title="Adicionar próximo mês" style="opacity:.6;font-size:10px">
+        <div class="nav-wrapper"><span class="nav-icon">＋</span><span>Próximo mês</span></div>
+      </div>`;
       document.getElementById('mesesList').innerHTML=html;
+    }
+
+    function adicionarMes(quando){
+      const sorted=[...state.meses].sort();
+      let ref,d;
+      if(quando==='antes'){
+        ref=sorted[0]||new Date().toISOString().slice(0,7);
+        d=new Date(ref+'-15');
+        d.setMonth(d.getMonth()-1);
+      } else {
+        ref=sorted[sorted.length-1]||new Date().toISOString().slice(0,7);
+        d=new Date(ref+'-15');
+        d.setMonth(d.getMonth()+1);
+      }
+      const novo=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      if(!state.meses.includes(novo)){
+        state.meses.push(novo);
+        salvarDados();
+        renderMeses();
+      }
+    }
+
+    function removerMes(id,e){
+      e.stopPropagation();
+      const temTrans=state.transacoes.some(t=>t.mes===id);
+      if(temTrans){alert('Não é possível remover um mês com transações.');return}
+      state.meses=state.meses.filter(m=>m!==id);
+      if(state.mes===id)state.mes=null;
+      salvarDados();
+      renderMeses();
+      renderDashboard();
     }
 
     function selecionarMes(id){
@@ -364,6 +425,7 @@
       while(d<=fim){
         const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
         state.transacoes.push({id:Date.now()+Math.random(),mes:mesId,estab,valor,data,cartao:document.getElementById('transCartao').value,divide:document.getElementById('transDivide').value,percent:parseInt(document.getElementById('transPercent').value)});
+        if(!state.meses.includes(mesId))state.meses.push(mesId);
         d.setMonth(d.getMonth()+1);
       }
       salvarDados();
