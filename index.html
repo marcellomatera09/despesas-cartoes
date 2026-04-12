@@ -39,10 +39,10 @@
       <div class="sidebar-nav">
         <div class="sidebar-section">
           <div class="sidebar-section-title">Cartões</div>
-          <div class="nav-item inter active" onclick="selecionarCartao('inter')">
+          <div class="nav-item inter" onclick="selecionarCartao('inter')">
             <div class="nav-wrapper"><span class="nav-icon" style="color:var(--inter)">■</span><span>Inter</span></div>
           </div>
-          <div class="nav-item amex" onclick="selecionarCartao('amex')">
+          <div class="nav-item amex active" onclick="selecionarCartao('amex')">
             <div class="nav-wrapper"><span class="nav-icon" style="color:var(--amex)">■</span><span>AMEX</span></div>
           </div>
         </div>
@@ -183,7 +183,7 @@
     
     const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    const state = {usuario:'',email:'',cartao:'inter',mes:null,meses:[],transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
+    const state = {usuario:'',email:'',cartao:'amex',mes:null,meses:[],transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
     const mesesNomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     let edicaoMes = null;
 
@@ -367,8 +367,9 @@
 
     function excluirTransacao(id){
       if(!confirm('Excluir esta transação?'))return;
-      state.transacoes=state.transacoes.filter(t=>t.id!==id);
+      state.transacoes=state.transacoes.filter(t=>String(t.id)!==String(id));
       salvarDados();
+      renderMeses();
       renderDashboard();
     }
 
@@ -394,11 +395,12 @@
         }
         txt+='\n';
       });
-      // Abrir em nova janela para imprimir/salvar
-      const w=window.open('','_blank');
-      w.document.write(`<pre style="font-family:monospace;font-size:13px;padding:24px;white-space:pre">${txt}</pre>`);
-      w.document.title=`Relatório ${mesLabel}`;
-      w.print();
+      // Download como .txt
+      const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=`relatorio_${mes}.txt`;
+      a.click();
     }
 
     function renderDashboard(){
@@ -437,7 +439,7 @@
             <td style="padding:6px;font-weight:500">${t.estab}</td>
             <td style="padding:6px;text-align:right;font-weight:600;white-space:nowrap">${fmt(t.valor)}</td>
             <td style="padding:6px;color:var(--text-light);font-size:11px">${t.divide?t.divide+' ('+(100-(t.percent||100))+'% deles)':''}</td>
-            <td style="padding:6px;text-align:center"><button onclick="excluirTransacao(${t.id})" style="background:none;border:none;cursor:pointer;color:#ccc;font-size:14px" title="Excluir">🗑</button></td>
+            <td style="padding:6px;text-align:center"><button onclick="excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;transition:color .2s" onmouseover="this.style.color='#c00'" onmouseout="this.style.color='#bbb'" title="Excluir">🗑</button></td>
           </tr>`).join('')}
           </tbody></table>`;
       }
