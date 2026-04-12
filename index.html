@@ -413,8 +413,9 @@
       const recorrente=document.getElementById('transRecorrente').checked;
       const dataFinal=document.getElementById('transDataFinal').value;
       if(recorrente&&!dataFinal){alert('Data final obrigatória');return}
-      let d=new Date(data);
-      const fim=recorrente?new Date(dataFinal):d;
+      const parsearData=s=>{const[y,m,dia]=s.split('-').map(Number);return new Date(y,m-1,dia);};
+      let d=parsearData(data);
+      const fim=recorrente?parsearData(dataFinal):parsearData(data);
       while(d<=fim){
         const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
         state.transacoes.push({id:Date.now()+Math.random(),mes:mesId,estab,valor,data,cartao:document.getElementById('transCartao').value,divide:document.getElementById('transDivide').value,percent:parseInt(document.getElementById('transPercent').value)});
@@ -423,6 +424,7 @@
       }
       salvarDados();
       fecharModal('transacaoModal');
+      renderMeses();
       renderDashboard();
     }
 
