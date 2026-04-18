@@ -300,7 +300,7 @@
         state.fechamentos = parsed.fechamentos||{};
         state.meses = parsed.meses||gerarMesesPadrao();
         // Normalizar transações antigas sem parcelaNum/recorrente
-        normalizarTransacoes();
+        if(normalizarTransacoes()) salvarDados();
       } else {
         state.meses = gerarMesesPadrao();
       }
@@ -308,7 +308,7 @@
     }
 
     function normalizarTransacoes(){
-      // Agrupar por grupId para inferir parcelas
+      let alterou=false;
       const grupos={};
       state.transacoes.forEach(t=>{
         if(t.grupId){
@@ -321,21 +321,19 @@
         const grupo=grupos[t.grupId];
         const sorted=grupo.sort((a,b)=>a.mes>b.mes?1:-1);
         const idx=sorted.findIndex(x=>x.id===t.id);
-        // Se parcelaNum já existe, não sobrescreve
         if(t.parcelaNum==null){
-          // Heurística: se todos do grupo têm mesma data base → parcelado; senão → recorrente
           const datas=new Set(grupo.map(x=>x.data));
           if(datas.size===1){
-            // Parcelado — todos com a mesma data de compra
             t.parcelaNum=idx+1;
             t.parcelaTotal=grupo.length;
             t.recorrente=false;
           } else {
-            // Recorrente — datas diferentes
             t.recorrente=true;
           }
+          alterou=true;
         }
       });
+      return alterou;
     }
 
     function gerarMesesPadrao(){
