@@ -309,6 +309,8 @@
 
     function normalizarTransacoes(){
       let alterou=false;
+
+      // 1. Transações com grupId já existente (novas) — inferir se faltam campos
       const grupos={};
       state.transacoes.forEach(t=>{
         if(t.grupId){
@@ -316,23 +318,40 @@
           grupos[t.grupId].push(t);
         }
       });
-      state.transacoes.forEach(t=>{
-        if(!t.grupId)return;
-        const grupo=grupos[t.grupId];
+      Object.values(grupos).forEach(grupo=>{
         const sorted=grupo.sort((a,b)=>a.mes>b.mes?1:-1);
-        const idx=sorted.findIndex(x=>x.id===t.id);
-        if(t.parcelaNum==null){
-          const datas=new Set(grupo.map(x=>x.data));
-          if(datas.size===1){
-            t.parcelaNum=idx+1;
-            t.parcelaTotal=grupo.length;
-            t.recorrente=false;
-          } else {
-            t.recorrente=true;
-          }
+        const datasCompra=new Set(sorted.map(t=>t.data));
+        const ehParcelado=datasCompra.size===1;
+        sorted.forEach((t,i)=>{
+          if(t.parcelaNum!=null)return;
+          if(ehParcelado){t.parcelaNum=i+1;t.parcelaTotal=sorted.length;t.recorrente=false;}
+          else{t.recorrente=true;t.parcelaNum=null;t.parcelaTotal=null;}
           alterou=true;
-        }
+        });
       });
+
+      // 2. Transações antigas sem grupId — detectar séries por estab+valor+cartao+data
+      const semGrup=state.transacoes.filter(t=>!t.grupId);
+      const seriesVelhas={};
+      semGrup.forEach(t=>{
+        const k=`${t.estab}|${t.valor}|${t.data}|${t.cartao}`;
+        if(!seriesVelhas[k])seriesVelhas[k]=[];
+        seriesVelhas[k].push(t);
+      });
+      Object.values(seriesVelhas).forEach(serie=>{
+        if(serie.length<2)return;
+        const sorted=serie.sort((a,b)=>a.mes>b.mes?1:-1);
+        const grupId='mig'+String(Date.now())+String(Math.floor(Math.random()*9999));
+        const datasCompra=new Set(sorted.map(t=>t.data));
+        const ehParcelado=datasCompra.size===1;
+        sorted.forEach((t,i)=>{
+          t.grupId=grupId;
+          if(ehParcelado){t.parcelaNum=i+1;t.parcelaTotal=sorted.length;t.recorrente=false;}
+          else{t.recorrente=true;t.parcelaNum=null;t.parcelaTotal=null;}
+          alterou=true;
+        });
+      });
+
       return alterou;
     }
 
