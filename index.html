@@ -164,6 +164,14 @@
         <label>Observações</label>
         <textarea id="transObs" style="width:100%;min-height:44px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:inherit;resize:vertical" placeholder="Opcional..."></textarea>
       </div>
+      <div id="editTipoDiv" class="form-field" style="display:none;margin-top:10px">
+        <label>Tipo desta despesa</label>
+        <select id="transEditTipo">
+          <option value="avulso">Avulso (única)</option>
+          <option value="recorrente">Recorrente (assinatura/mensal)</option>
+          <option value="parcelado">Parcelado</option>
+        </select>
+      </div>
       <div class="modal-footer">
         <button class="btn" onclick="fecharModal('transacaoModal')">Cancelar</button>
         <button class="btn btn-primary" onclick="salvarTransacao()">Salvar</button>
@@ -675,11 +683,13 @@
           if(serie.length<2)return;
           const sorted=serie.sort((a,b)=>a.mes>b.mes?1:-1);
           const grupId='mig'+String(Date.now())+String(Math.floor(Math.random()*9999));
-          const ehParcelado=new Set(sorted.map(t=>t.data)).size===1;
+          // Dados antigos sem grupId: classificar como recorrente por padrão
+          // (não há como distinguir parcelado de recorrente sem o flag original)
           sorted.forEach((t,i)=>{
             t.grupId=grupId;
-            if(ehParcelado){t.parcelaNum=i+1;t.parcelaTotal=sorted.length;t.recorrente=false;}
-            else{t.recorrente=true;t.parcelaNum=null;t.parcelaTotal=null;}
+            t.recorrente=true;
+            t.parcelaNum=null;
+            t.parcelaTotal=null;
             precisaSalvar=true;
           });
         });
@@ -771,7 +781,6 @@
       const t=state.transacoes.find(x=>x.id===id);
       if(!t)return;
       _editandoId=id;
-      // Preencher modal com dados existentes
       document.getElementById('smsInput').value='';
       document.getElementById('transEstab').value=t.estab||'';
       document.getElementById('transValor').value=t.valor||'';
@@ -783,6 +792,10 @@
       document.getElementById('transParcelado').checked=false;
       document.getElementById('parceladoDiv').style.display='none';
       document.getElementById('parcelasCustomDiv').style.display='none';
+      // Preencher tipo atual
+      const tipoAtual=t.recorrente?'recorrente':t.parcelaNum?'parcelado':'avulso';
+      document.getElementById('transEditTipo').value=tipoAtual;
+      document.getElementById('editTipoDiv').style.display='block';
       togglePercent();
       if(t.divide){
         document.getElementById('transPercent').value=t.percent||50;
@@ -794,6 +807,7 @@
 
     function abrirNovaTransacao(){
       _editandoId=null;
+      document.getElementById('editTipoDiv').style.display='none';
       document.querySelector('#transacaoModal .modal-title').textContent='Nova Transação';
       document.getElementById('smsInput').value='';
       document.getElementById('transEstab').value='';
@@ -893,9 +907,13 @@
             const t=state.transacoes[idx];
             const divide=document.getElementById('transDivide').value;
             const percent=divide?parseInt(document.getElementById('transPercent').value)||50:100;
+            const tipo=document.getElementById('transEditTipo').value;
+            const recorrente=tipo==='recorrente';
+            const parcelaNum=tipo==='parcelado'?t.parcelaNum:null;
+            const parcelaTotal=tipo==='parcelado'?t.parcelaTotal:null;
             state.transacoes[idx]={...t,estab,valor,data,obs,
               cartao:document.getElementById('transCartao').value,
-              divide,percent};
+              divide,percent,recorrente,parcelaNum,parcelaTotal};
           }
           _editandoId=null;
           salvarDados();
