@@ -317,49 +317,22 @@
 
     function normalizarTransacoes(){
       let alterou=false;
-
-      // 1. Transações com grupId já existente (novas) — inferir se faltam campos
+      // Só processa transações com grupId que ainda não têm recorrente/parcelaNum definidos
       const grupos={};
       state.transacoes.forEach(t=>{
-        if(t.grupId){
+        if(t.grupId && t.recorrente==null && t.parcelaNum==null){
           if(!grupos[t.grupId])grupos[t.grupId]=[];
           grupos[t.grupId].push(t);
         }
       });
       Object.values(grupos).forEach(grupo=>{
         const sorted=grupo.sort((a,b)=>a.mes>b.mes?1:-1);
-        const datasCompra=new Set(sorted.map(t=>t.data));
-        const ehParcelado=datasCompra.size===1;
+        // Se grupId começa com 'mig' ou 'avulso' já foi processado pela migração inline
         sorted.forEach((t,i)=>{
-          if(t.parcelaNum!=null)return;
-          if(ehParcelado){t.parcelaNum=i+1;t.parcelaTotal=sorted.length;t.recorrente=false;}
-          else{t.recorrente=true;t.parcelaNum=null;t.parcelaTotal=null;}
+          t.recorrente=true; t.parcelaNum=null; t.parcelaTotal=null;
           alterou=true;
         });
       });
-
-      // 2. Transações antigas sem grupId — detectar séries por estab+valor+cartao+data
-      const semGrup=state.transacoes.filter(t=>!t.grupId);
-      const seriesVelhas={};
-      semGrup.forEach(t=>{
-        const k=`${t.estab}|${t.valor}|${t.data}|${t.cartao}`;
-        if(!seriesVelhas[k])seriesVelhas[k]=[];
-        seriesVelhas[k].push(t);
-      });
-      Object.values(seriesVelhas).forEach(serie=>{
-        if(serie.length<2)return;
-        const sorted=serie.sort((a,b)=>a.mes>b.mes?1:-1);
-        const grupId='mig'+String(Date.now())+String(Math.floor(Math.random()*9999));
-        const datasCompra=new Set(sorted.map(t=>t.data));
-        const ehParcelado=datasCompra.size===1;
-        sorted.forEach((t,i)=>{
-          t.grupId=grupId;
-          if(ehParcelado){t.parcelaNum=i+1;t.parcelaTotal=sorted.length;t.recorrente=false;}
-          else{t.recorrente=true;t.parcelaNum=null;t.parcelaTotal=null;}
-          alterou=true;
-        });
-      });
-
       return alterou;
     }
 
@@ -668,32 +641,32 @@
       // Transações do cartão selecionado
       const trans=state.transacoes.filter(t=>t.mes===state.mes&&t.cartao===state.cartao);
 
-      // Migração inline: detectar séries sem grupId
-      let precisaSalvar=false;
-      const semGrup=trans.filter(t=>!t.grupId);
-      if(semGrup.length>0){
+      // Migração única: detectar séries antigas (sem grupId) em TODAS as transações
+      // Só roda se houver alguma sem grupId — nunca toca em quem já tem
+      if(state.transacoes.some(t=>!t.grupId)){
         const todasSemGrup=state.transacoes.filter(t=>!t.grupId);
         const seriesVelhas={};
         todasSemGrup.forEach(t=>{
-          const k=`${t.estab}|${t.valor}|${t.data}|${t.cartao}`;
+          const k=`${t.estab}|${t.valor}|${t.cartao}`;
           if(!seriesVelhas[k])seriesVelhas[k]=[];
           seriesVelhas[k].push(t);
         });
+        let salvou=false;
         Object.values(seriesVelhas).forEach(serie=>{
-          if(serie.length<2)return;
-          const sorted=serie.sort((a,b)=>a.mes>b.mes?1:-1);
           const grupId='mig'+String(Date.now())+String(Math.floor(Math.random()*9999));
-          // Dados antigos sem grupId: classificar como recorrente por padrão
-          // (não há como distinguir parcelado de recorrente sem o flag original)
-          sorted.forEach((t,i)=>{
-            t.grupId=grupId;
-            t.recorrente=true;
-            t.parcelaNum=null;
-            t.parcelaTotal=null;
-            precisaSalvar=true;
-          });
+          if(serie.length>=2){
+            serie.sort((a,b)=>a.mes>b.mes?1:-1).forEach(t=>{
+              t.grupId=grupId; t.recorrente=true; t.parcelaNum=null; t.parcelaTotal=null;
+              salvou=true;
+            });
+          } else {
+            // série única — marcar grupId null para não reprocessar
+            serie[0].grupId=null; // já é null, mas força a não entrar aqui novamente
+          }
         });
-        if(precisaSalvar)salvarDados();
+        // Marcar avulsas para não reprocessar
+        state.transacoes.filter(t=>!t.grupId).forEach(t=>{ t.grupId='avulso_'+t.id; t.recorrente=false; t.parcelaNum=null; t.parcelaTotal=null; salvou=true; });
+        if(salvou)salvarDados();
       }
 
       let linhas='<div style="font-size:11px;color:var(--text-light);padding:8px 0">Nenhuma transação neste mês.</div>';
@@ -847,9 +820,17 @@
     }
 
     function toggleRecorrencia(){
-      const show=document.getElementById('transRecorrente').checked;
+      const cb=document.getElementById('transRecorrente');
+      console.log('[toggleRecorrencia] checked=',cb.checked);
+      const show=cb.checked;
       document.getElementById('recorrenciaDiv').style.display=show?'block':'none';
-      if(show){const d=new Date(document.getElementById('transData').value);d.setFullYear(d.getFullYear()+1);document.getElementById('transDataFinal').value=d.toISOString().split('T')[0]}
+      if(show){
+        const dataVal=document.getElementById('transData').value;
+        if(dataVal){
+          const d=new Date(dataVal);d.setFullYear(d.getFullYear()+1);
+          document.getElementById('transDataFinal').value=d.toISOString().split('T')[0];
+        }
+      }
     }
 
     function extrairSMS(){
