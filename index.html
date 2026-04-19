@@ -307,8 +307,6 @@
         state.config = parsed.config||{inter:5,amex:28};
         state.fechamentos = parsed.fechamentos||{};
         state.meses = parsed.meses||gerarMesesPadrao();
-        // Normalizar transações antigas sem parcelaNum/recorrente
-        if(normalizarTransacoes()) salvarDados();
       } else {
         state.meses = gerarMesesPadrao();
       }
@@ -642,30 +640,28 @@
       const trans=state.transacoes.filter(t=>t.mes===state.mes&&t.cartao===state.cartao);
 
       // Migração única: detectar séries antigas (sem grupId) em TODAS as transações
-      // Só roda se houver alguma sem grupId — nunca toca em quem já tem
-      if(state.transacoes.some(t=>!t.grupId)){
-        const todasSemGrup=state.transacoes.filter(t=>!t.grupId);
+      // Nunca toca em quem já tem grupId, recorrente ou parcelaNum definidos
+      const verdadeiramenteSemGrup=state.transacoes.filter(t=>!t.grupId && t.recorrente==null && t.parcelaNum==null);
+      if(verdadeiramenteSemGrup.length>0){
         const seriesVelhas={};
-        todasSemGrup.forEach(t=>{
+        verdadeiramenteSemGrup.forEach(t=>{
           const k=`${t.estab}|${t.valor}|${t.cartao}`;
           if(!seriesVelhas[k])seriesVelhas[k]=[];
           seriesVelhas[k].push(t);
         });
         let salvou=false;
         Object.values(seriesVelhas).forEach(serie=>{
-          const grupId='mig'+String(Date.now())+String(Math.floor(Math.random()*9999));
           if(serie.length>=2){
+            const grupId='mig'+String(Date.now())+String(Math.floor(Math.random()*9999));
             serie.sort((a,b)=>a.mes>b.mes?1:-1).forEach(t=>{
               t.grupId=grupId; t.recorrente=true; t.parcelaNum=null; t.parcelaTotal=null;
               salvou=true;
             });
           } else {
-            // série única — marcar grupId null para não reprocessar
-            serie[0].grupId=null; // já é null, mas força a não entrar aqui novamente
+            serie[0].grupId='avulso_'+serie[0].id; serie[0].recorrente=false; serie[0].parcelaNum=null; serie[0].parcelaTotal=null;
+            salvou=true;
           }
         });
-        // Marcar avulsas para não reprocessar
-        state.transacoes.filter(t=>!t.grupId).forEach(t=>{ t.grupId='avulso_'+t.id; t.recorrente=false; t.parcelaNum=null; t.parcelaTotal=null; salvou=true; });
         if(salvou)salvarDados();
       }
 
