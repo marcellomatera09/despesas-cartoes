@@ -659,40 +659,81 @@
 
       // Transações do cartão selecionado
       const trans=state.transacoes.filter(t=>t.mes===state.mes&&t.cartao===state.cartao);
+
+      // Migração inline: detectar séries sem grupId
+      let precisaSalvar=false;
+      const semGrup=trans.filter(t=>!t.grupId);
+      if(semGrup.length>0){
+        const todasSemGrup=state.transacoes.filter(t=>!t.grupId);
+        const seriesVelhas={};
+        todasSemGrup.forEach(t=>{
+          const k=`${t.estab}|${t.valor}|${t.data}|${t.cartao}`;
+          if(!seriesVelhas[k])seriesVelhas[k]=[];
+          seriesVelhas[k].push(t);
+        });
+        Object.values(seriesVelhas).forEach(serie=>{
+          if(serie.length<2)return;
+          const sorted=serie.sort((a,b)=>a.mes>b.mes?1:-1);
+          const grupId='mig'+String(Date.now())+String(Math.floor(Math.random()*9999));
+          const ehParcelado=new Set(sorted.map(t=>t.data)).size===1;
+          sorted.forEach((t,i)=>{
+            t.grupId=grupId;
+            if(ehParcelado){t.parcelaNum=i+1;t.parcelaTotal=sorted.length;t.recorrente=false;}
+            else{t.recorrente=true;t.parcelaNum=null;t.parcelaTotal=null;}
+            precisaSalvar=true;
+          });
+        });
+        if(precisaSalvar)salvarDados();
+      }
+
       let linhas='<div style="font-size:11px;color:var(--text-light);padding:8px 0">Nenhuma transação neste mês.</div>';
       if(trans.length>0){
-        linhas=`<table style="width:100%;border-collapse:collapse;font-size:12px">
+        const cabecalho=`<table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead><tr style="border-bottom:2px solid var(--border)">
-            <th style="text-align:left;padding:6px;font-size:10px;color:var(--text-light)">DATA</th>
-            <th style="text-align:left;padding:6px;font-size:10px;color:var(--text-light)">ESTABELECIMENTO</th>
-            <th style="text-align:right;padding:6px;font-size:10px;color:var(--text-light)">VALOR</th>
-            <th style="text-align:left;padding:6px;font-size:10px;color:var(--text-light)">DIVIDE</th>
-            <th style="text-align:center;padding:6px;font-size:10px;color:var(--text-light)">TIPO</th>
-            <th style="padding:6px"></th>
-          </tr></thead><tbody>
-          ${[...trans].sort((a,b)=>a.data>b.data?-1:1).map(t=>{
-            const pctDeles=100-(t.percent??100);
-            const divideLabel=t.divide&&pctDeles>0?`${t.divide} (${pctDeles}%)`:'';
-            const tipoTag=t.parcelaNum
-              ?`<span style="font-size:9px;background:#f0f0f0;color:var(--text-light);padding:2px 5px;border-radius:3px;white-space:nowrap">${t.parcelaNum}/${t.parcelaTotal}</span>`
-              :t.recorrente
-                ?`<span style="font-size:9px;background:#e8f4ff;color:#2d7dd2;padding:2px 5px;border-radius:3px;white-space:nowrap">🔁 Recor.</span>`
-                :'';
-            const obsIcon=t.obs?`<span title="${t.obs.replace(/"/g,'&quot;')}" style="cursor:help;font-size:12px;margin-left:3px">💬</span>`:'';
-            return `<tr style="border-bottom:1px solid var(--gray-100)">
-              <td style="padding:6px;color:var(--text-light);white-space:nowrap">${t.data?t.data.split('-').reverse().join('/'):'—'}</td>
-              <td style="padding:6px;font-weight:500">${t.estab}${obsIcon}</td>
-              <td style="padding:6px;text-align:right;font-weight:600;white-space:nowrap">${fmt(t.valor)}</td>
-              <td style="padding:6px;color:var(--text-light);font-size:11px">${divideLabel}</td>
-              <td style="padding:6px;text-align:center">${tipoTag}</td>
-              <td style="padding:6px;text-align:center;white-space:nowrap">
-                <button onclick="abrirEditarTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px" title="Editar">✏️</button>
-                <button onclick="abrirMover('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px" title="Mover">↕</button>
-                <button onclick="excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#c00;font-size:14px" title="Excluir">🗑</button>
-              </td>
-            </tr>`;
-          }).join('')}
-          </tbody></table>`;
+            <th style="text-align:left;padding:6px 4px;font-size:10px;color:var(--text-light)">DATA</th>
+            <th style="text-align:left;padding:6px 4px;font-size:10px;color:var(--text-light)">ESTABELECIMENTO</th>
+            <th style="text-align:right;padding:6px 4px;font-size:10px;color:var(--text-light)">VALOR</th>
+            <th style="text-align:left;padding:6px 4px;font-size:10px;color:var(--text-light)">DIVIDE</th>
+            <th style="text-align:center;padding:6px 4px;font-size:10px;color:var(--text-light)">RECOR.</th>
+            <th style="text-align:center;padding:6px 4px;font-size:10px;color:var(--text-light)">PARCELA</th>
+            <th style="padding:6px 4px"></th>
+          </tr></thead><tbody>`;
+
+        const renderLinha=t=>{
+          const pctDeles=100-(t.percent??100);
+          const divideLabel=t.divide&&pctDeles>0?`${t.divide} (${pctDeles}%)`:(t.divide?t.divide:'');
+          const recorTag=t.recorrente?`<span style="font-size:10px;color:#2d7dd2;font-weight:600">🔁</span>`:'—';
+          const parcelaTag=t.parcelaNum?`<span style="font-size:10px;font-weight:600;color:var(--text)">${t.parcelaNum}/${t.parcelaTotal}</span>`:'—';
+          const obsIcon=t.obs?`<span title="${t.obs.replace(/"/g,'&quot;')}" style="cursor:help;font-size:11px;margin-left:3px">💬</span>`:'';
+          return `<tr style="border-bottom:1px solid var(--gray-100)">
+            <td style="padding:5px 4px;color:var(--text-light);white-space:nowrap;font-size:11px">${t.data?t.data.split('-').reverse().join('/'):'—'}</td>
+            <td style="padding:5px 4px;font-weight:500">${t.estab}${obsIcon}</td>
+            <td style="padding:5px 4px;text-align:right;font-weight:600;white-space:nowrap">${fmt(t.valor)}</td>
+            <td style="padding:5px 4px;color:var(--text-light);font-size:11px">${divideLabel}</td>
+            <td style="padding:5px 4px;text-align:center">${recorTag}</td>
+            <td style="padding:5px 4px;text-align:center">${parcelaTag}</td>
+            <td style="padding:5px 4px;text-align:center;white-space:nowrap">
+              <button onclick="abrirEditarTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px" title="Editar">✏️</button>
+              <button onclick="abrirMover('${t.id}')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px" title="Mover">↕</button>
+              <button onclick="excluirTransacao('${t.id}')" style="background:none;border:none;cursor:pointer;color:#c00;font-size:13px" title="Excluir">🗑</button>
+            </td>
+          </tr>`;
+        };
+
+        const separador=(label,cor='var(--text-light)')=>
+          `<tr><td colspan="7" style="padding:8px 4px 4px;font-size:10px;font-weight:700;color:${cor};text-transform:uppercase;border-bottom:1px solid var(--gray-100)">${label}</td></tr>`;
+
+        // Agrupar: recorrentes / parceladas / simples
+        const recorrentes=trans.filter(t=>t.recorrente).sort((a,b)=>a.data>b.data?-1:1);
+        const parceladas=trans.filter(t=>t.parcelaNum&&!t.recorrente).sort((a,b)=>a.data>b.data?-1:1);
+        const simples=trans.filter(t=>!t.recorrente&&!t.parcelaNum).sort((a,b)=>a.data>b.data?-1:1);
+
+        let corpo='';
+        if(recorrentes.length>0) corpo+=separador('🔁 Recorrentes','#2d7dd2')+recorrentes.map(renderLinha).join('');
+        if(parceladas.length>0)  corpo+=separador('📦 Parceladas')+parceladas.map(renderLinha).join('');
+        if(simples.length>0)     corpo+=separador('📋 Avulsas')+simples.map(renderLinha).join('');
+
+        linhas=cabecalho+corpo+`</tbody></table>`;
       }
 
       const totalCartao=trans.reduce((s,t)=>s+t.valor,0);
