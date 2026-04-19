@@ -110,8 +110,8 @@
         <div class="form-field"><label>Estabelecimento</label><input type="text" id="transEstab"></div>
         <div class="form-field"><label>Valor Total</label><input type="number" id="transValor" step="0.01" oninput="atualizarParcela()"></div>
       </div>
-      <div class="checkbox-field" style="margin-bottom:4px">
-        <input type="checkbox" id="transParcelado" onchange="toggleParcelado()">
+      <div class="checkbox-field">
+        <input type="checkbox" id="transParcelado" onclick="toggleParcelado()">
         <label for="transParcelado" style="margin:0;text-transform:none">Parcelado?</label>
       </div>
       <div id="parceladoDiv" style="display:none;margin-bottom:12px">
@@ -135,7 +135,7 @@
         <div class="form-field"><label>Cartão</label><select id="transCartao"><option value="inter">Inter</option><option value="amex">AMEX</option></select></div>
       </div>
       <div class="checkbox-field">
-        <input type="checkbox" id="transRecorrente" onchange="toggleRecorrencia()">
+        <input type="checkbox" id="transRecorrente" onclick="toggleRecorrencia()">
         <label for="transRecorrente" style="margin:0;text-transform:none">Recorrente?</label>
       </div>
       <div id="recorrenciaDiv" style="display:none">
@@ -1102,8 +1102,8 @@
     window.addEventListener('load', () => {
       atualizarRelogio();
 
-      // Event delegation único — trata todos os cliques com data-action
-      document.addEventListener('click', function(e){
+      // Event delegation restrito à sidebar de meses
+      document.querySelector('.sidebar-nav').addEventListener('click', function(e){
         const el=e.target.closest('[data-action]');
         if(!el)return;
         const action=el.dataset.action;
