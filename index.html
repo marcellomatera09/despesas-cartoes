@@ -55,6 +55,9 @@
           <div class="nav-item" onclick="abrirNovaTransacao()">
             <div class="nav-wrapper"><span class="nav-icon">➕</span><span>Nova</span></div>
           </div>
+          <div class="nav-item" onclick="abrirClassificar()">
+            <div class="nav-wrapper"><span class="nav-icon">🏷</span><span>Classificar</span></div>
+          </div>
           <div class="nav-item" onclick="abrirPessoas()">
             <div class="nav-wrapper"><span class="nav-icon">👥</span><span>Pessoas</span></div>
           </div>
@@ -246,6 +249,18 @@
       <div id="confirmSimplesDiv" class="modal-footer">
         <button class="btn" onclick="_confirmCancel()">Cancelar</button>
         <button class="btn btn-primary" style="background:#c00;border-color:#c00" onclick="_confirmOk()">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="classificarModal" class="modal">
+    <div class="modal-content" style="max-width:480px;max-height:80vh;display:flex;flex-direction:column">
+      <div class="modal-title">🏷 Classificar Séries</div>
+      <div style="font-size:11px;color:var(--text-light);margin-bottom:12px">Defina o tipo de cada grupo de despesas repetidas.</div>
+      <div id="classificarLista" style="overflow-y:auto;flex:1"></div>
+      <div class="modal-footer">
+        <button class="btn" onclick="fecharModal('classificarModal')">Fechar</button>
+        <button class="btn btn-primary" onclick="salvarClassificacao()">Salvar</button>
       </div>
     </div>
   </div>
@@ -978,6 +993,65 @@
       renderMeses();
       renderDashboard();
     }
+    function abrirClassificar(){
+      // Agrupar todas as transações por grupId
+      const grupos={};
+      state.transacoes.forEach(t=>{
+        if(!t.grupId||t.grupId.startsWith('avulso_'))return;
+        if(!grupos[t.grupId])grupos[t.grupId]=[];
+        grupos[t.grupId].push(t);
+      });
+
+      const series=Object.values(grupos).filter(g=>g.length>1).map(g=>{
+        const sorted=g.sort((a,b)=>a.mes>b.mes?1:-1);
+        const tipo=sorted[0].recorrente?'recorrente':sorted[0].parcelaNum?'parcelado':'avulso';
+        return {grupId:sorted[0].grupId, estab:sorted[0].estab, valor:sorted[0].valor, cartao:sorted[0].cartao, meses:sorted.length, tipo};
+      }).sort((a,b)=>a.estab>b.estab?1:-1);
+
+      if(series.length===0){
+        alert('Nenhuma série encontrada. Lance despesas parceladas ou recorrentes para classificar.');
+        return;
+      }
+
+      document.getElementById('classificarLista').innerHTML=series.map(s=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.estab}</div>
+            <div style="font-size:10px;color:var(--text-light)">${fmt(s.valor)} · ${s.meses}x · ${s.cartao.toUpperCase()}</div>
+          </div>
+          <select data-grupid="${s.grupId}" style="font-size:11px;padding:4px 6px;border:1px solid var(--border);border-radius:4px">
+            <option value="recorrente" ${s.tipo==='recorrente'?'selected':''}>🔁 Recorrente</option>
+            <option value="parcelado"  ${s.tipo==='parcelado'?'selected':''}>📦 Parcelado</option>
+            <option value="avulso"     ${s.tipo==='avulso'?'selected':''}>📋 Avulsa</option>
+          </select>
+        </div>`).join('');
+
+      document.getElementById('classificarModal').classList.add('active');
+    }
+
+    function salvarClassificacao(){
+      document.querySelectorAll('#classificarLista select').forEach(sel=>{
+        const grupId=sel.dataset.grupid;
+        const tipo=sel.value;
+        const grupo=state.transacoes.filter(t=>t.grupId===grupId);
+        grupo.sort((a,b)=>a.mes>b.mes?1:-1).forEach((t,i)=>{
+          if(tipo==='recorrente'){t.recorrente=true;t.parcelaNum=null;t.parcelaTotal=null;}
+          else if(tipo==='parcelado'){t.recorrente=false;t.parcelaNum=i+1;t.parcelaTotal=grupo.length;}
+          else{t.recorrente=false;t.parcelaNum=null;t.parcelaTotal=null;}
+          console.log('Classificado:',t.estab,t.mes,'→',tipo,'recorrente=',t.recorrente,'parcela=',t.parcelaNum);
+        });
+      });
+      console.log('Total transacoes antes de salvar:',state.transacoes.length);
+      salvarDados();
+      // Verificar se salvou certo
+      const key='despesas_'+state.usuario;
+      const salvo=JSON.parse(localStorage.getItem(key));
+      const apple=salvo.transacoes.filter(t=>t.estab==='Apple');
+      console.log('Apple no localStorage após salvar:',apple.map(t=>({mes:t.mes,recorrente:t.recorrente})));
+      fecharModal('classificarModal');
+      renderDashboard();
+    }
+
     function abrirPessoas(){
       document.getElementById('pessoasModal').classList.add('active');
       renderPessoas();
