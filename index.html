@@ -673,7 +673,18 @@
         const fim=(!parcelado&&recorrente)?parsearData(dataFinal):null;
         while(parcelado?count<nParcelas:(fim?d<=fim:count<1)){
           const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-          state.transacoes.push({id:String(Date.now())+String(Math.floor(Math.random()*9999)),mes:mesId,estab,valor:parcelado?valorParcela:valor,data,cartao:document.getElementById('transCartao').value,divide:document.getElementById('transDivide').value,percent:parseInt(document.getElementById('transPercent').value)||100});
+          const t={
+            id:String(Date.now())+String(Math.floor(Math.random()*9999)),
+            mes:mesId,estab,
+            valor:parcelado?valorParcela:valor,
+            data,
+            cartao:document.getElementById('transCartao').value,
+            divide:document.getElementById('transDivide').value,
+            percent:parseInt(document.getElementById('transPercent').value)||100
+          };
+          if(parcelado){t.numParcela=count+1;t.totalParcelas=nParcelas;}
+          if(recorrente&&!parcelado){t.recorrente=true;}
+          state.transacoes.push(t);
           if(!state.meses.includes(mesId))state.meses.push(mesId);
           d.setMonth(d.getMonth()+1);
           count++;
