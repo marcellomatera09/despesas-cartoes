@@ -609,8 +609,25 @@ function toggleGrupo(id){
 }
 
 function excluirTransacao(id){
-  if(!confirm('Excluir esta despesa?'))return;
-  state.transacoes=state.transacoes.filter(t=>String(t.id)!==String(id));
+  const t=state.transacoes.find(t=>String(t.id)===String(id));
+  if(!t)return;
+  const temGrupo=t.grupoId&&(t.tipo==='recorrente'||t.tipo==='parcelada');
+  const resto=temGrupo?state.transacoes.filter(x=>x.grupoId===t.grupoId&&String(x.id)!==String(id)):[];
+  if(temGrupo&&resto.length>0){
+    const label=t.tipo==='recorrente'?'recorrente':'parcelada';
+    const opcao=confirm(
+      'Esta despesa faz parte de uma sequência '+label+' ('+resto.length+' outra'+(resto.length>1?'s':'')+').'
+      +'\n\nOK = excluir TODAS da sequência\nCancelar = excluir só esta'
+    );
+    if(opcao){
+      state.transacoes=state.transacoes.filter(x=>x.grupoId!==t.grupoId);
+    } else {
+      state.transacoes=state.transacoes.filter(x=>String(x.id)!==String(id));
+    }
+  } else {
+    if(!confirm('Excluir esta despesa?'))return;
+    state.transacoes=state.transacoes.filter(x=>String(x.id)!==String(id));
+  }
   salvarDados();renderMeses();renderDashboard();
 }
 
@@ -705,22 +722,24 @@ function salvarTransacao(){
       const n=parseInt(document.getElementById('transParcelas').value)||2;
       const valorParcInput=parseFloat(document.getElementById('transValorParcela').value);
       const valorParc=valorParcInput||Math.round(valor/n*100)/100;
+      const gid=uid();
       let d=parsearData(data);
       for(let i=0;i<n;i++){
         const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-        push({...baseT,id:uid(),mes:mesId,valor:valorParc,tipo:'parcelada',numParcela:i+1,totalParcelas:n,percentMeu:100});
+        push({...baseT,id:uid(),mes:mesId,valor:valorParc,tipo:'parcelada',numParcela:i+1,totalParcelas:n,percentMeu:100,grupoId:gid});
         d.setMonth(d.getMonth()+1);
       }
     }
     else if(tipoAtual==='recorrente'){
       const dataFinal=document.getElementById('transDataFinal').value;
       if(!dataFinal){alert('Informe a data final');return}
+      const gid=uid();
       let d=parsearData(data);
       const fim=parsearData(dataFinal);
       let count=0;
       while(d<=fim&&count<120){
         const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-        push({...baseT,id:uid(),mes:mesId,valor,tipo:'recorrente',percentMeu:100});
+        push({...baseT,id:uid(),mes:mesId,valor,tipo:'recorrente',percentMeu:100,grupoId:gid});
         d.setMonth(d.getMonth()+1);count++;
       }
     }
