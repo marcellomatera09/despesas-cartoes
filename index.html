@@ -530,8 +530,6 @@ function renderDashboard(){
 
   const todas=state.transacoes.filter(t=>t.mes===state.mes&&t.cartao===state.cartao);
   const totalGeral=todas.reduce((s,t)=>s+t.valor,0);
-  const minhasGeral=todas.filter(t=>!t.terceiro).reduce((s,t)=>s+(t.valor*(t.percentMeu||100)/100),0);
-  const totalTerceiros=terceiros.reduce((s,t)=>s+t.valor,0);
 
   // Separar por tipo e dono
   const terceiros  =todas.filter(t=>t.terceiro);
@@ -539,6 +537,9 @@ function renderDashboard(){
   const parceladas =todas.filter(t=>t.tipo==='parcelada'&&!t.terceiro&&!t.rateada);
   const recorrentes=todas.filter(t=>t.tipo==='recorrente'&&!t.terceiro&&!t.rateada);
   const normais    =todas.filter(t=>(!t.tipo||t.tipo==='normal')&&!t.terceiro&&!t.rateada);
+
+  const totalTerceiros=terceiros.reduce((s,t)=>s+t.valor,0);
+  const minhasGeral=todas.filter(t=>!t.terceiro).reduce((s,t)=>s+(t.valor*(t.percentMeu||100)/100),0);
 
   const resumoBar=todas.length?`
     <div class="resumo-bar">
