@@ -370,7 +370,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 <script>
 const SUPABASE_URL='https://umeinujkrfsemtgfvbvs.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZWludWprcmZzZW10Z2Z2YnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MDM1ODksImV4cCI6MjA5MTQ3OTU4OX0.1zD91A2A0eF5e3IJuweh2rZsUSFsUEb6B9yZhwAuXVc';
-const sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let sbClient;
 
 const state={usuario:'',email:'',cartao:'amex',mes:null,meses:[],transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
 const mesesNomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -909,6 +909,7 @@ function init(){
 }
 
 window.addEventListener('load',()=>{
+  sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
   atualizarRelogio();
   sbClient.auth.onAuthStateChange((event,session)=>{
     if(session){
