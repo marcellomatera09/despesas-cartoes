@@ -370,7 +370,8 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 <script>
 const SUPABASE_URL='https://umeinujkrfsemtgfvbvs.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZWludWprcmZzZW10Z2Z2YnZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MDM1ODksImV4cCI6MjA5MTQ3OTU4OX0.1zD91A2A0eF5e3IJuweh2rZsUSFsUEb6B9yZhwAuXVc';
-let sbClient;
+const sbClient={};
+Object.defineProperty(window,'_sb',{get:()=>{if(!window.__sb)window.__sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);return window.__sb;}});
 
 const state={usuario:'',email:'',cartao:'amex',mes:null,meses:[],transacoes:[],pessoas:['Você'],config:{inter:5,amex:28},fechamentos:{}};
 const mesesNomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -382,19 +383,19 @@ let donoAtual='minha';
 async function fazerLogin(){
   const email=document.getElementById('loginEmail').value;
   const pass=document.getElementById('loginPass').value;
-  const{error}=await sbClient.auth.signInWithPassword({email,password:pass});
+  const{error}=await window._sb.auth.signInWithPassword({email,password:pass});
   if(error)alert('Erro: '+error.message);
 }
 async function fazerSignup(){
   const email=document.getElementById('loginEmail').value;
   const pass=document.getElementById('loginPass').value;
   if(!email||!pass){alert('Preencha email e senha');return}
-  const{error}=await sbClient.auth.signUp({email,password:pass});
+  const{error}=await window._sb.auth.signUp({email,password:pass});
   if(error)alert('Erro: '+error.message);
   else alert('Conta criada! Faça login.');
 }
 async function fazerLogout(){
-  await sbClient.auth.signOut();
+  await window._sb.auth.signOut();
   location.reload();
 }
 
@@ -908,9 +909,8 @@ function init(){
 }
 
 window.addEventListener('load',()=>{
-  sbClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
   atualizarRelogio();
-  sbClient.auth.onAuthStateChange((event,session)=>{
+  window._sb.auth.onAuthStateChange((event,session)=>{
     if(session){
       state.usuario=session.user.id;
       state.email=session.user.email;
