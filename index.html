@@ -583,7 +583,7 @@ function grupoHtml(id,cor,bg,trans){
   const minhas=trans.reduce((s,t)=>s+(t.valor*(t.percentMeu||100)/100),0);
   const rows=trans.length?tabelaRows(trans):'<div style="padding:10px 12px;font-size:12px;color:var(--text3)">Nenhuma.</div>';
   return '<div class="grupo">'
-    +'<div class="grupo-header" onclick="toggleGrupo(''+gid+'')">'
+    +'<div class="grupo-header" onclick="toggleGrupo(\''+gid+'\')">'
     +'<div class="grupo-left">'
     +'<div class="grupo-dot" style="background:'+cor+'"></div>'
     +'<div class="grupo-titulo">'+label+'</div>'
