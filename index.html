@@ -422,11 +422,15 @@ function carregarDados(){
 }
 function gerarMesesPadrao(){
   const arr=[];
-  for(let i=5;i>=0;i--){
-    const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);
+  for(let i=-3;i<=2;i++){
+    const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+i);
     arr.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));
   }
   return arr;
+}
+function mesVigente(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
 
 /* ── MESES ── */
@@ -504,10 +508,7 @@ function fmt(v){return'R$ '+(+v||0).toFixed(2).replace('.',',').replace(/\B(?=(\
 
 /* ── DASHBOARD ── */
 function renderDashboard(){
-  if(!state.mes){
-    document.getElementById('mainContent').innerHTML='<div style="padding:40px;text-align:center;color:var(--text2)">Selecione um mês</div>';
-    return;
-  }
+  if(!state.mes) state.mes=mesVigente();
   const mesLabel=new Date(state.mes+'-15').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const fech=getFechamento(state.mes);
 
@@ -901,10 +902,9 @@ setInterval(atualizarRelogio,1000);
 
 /* ── INIT ── */
 function init(){
-  if(!state.mes&&state.meses.length){
-    const sorted=[...state.meses].sort();
-    state.mes=sorted[sorted.length-1];
-  }
+  const vigente=mesVigente();
+  if(!state.meses.includes(vigente)) state.meses.push(vigente);
+  state.mes=vigente;
   renderMeses();renderDashboard();
 }
 
