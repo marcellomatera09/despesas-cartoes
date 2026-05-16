@@ -15,7 +15,7 @@
   --text:#111827;--text2:#6B7280;--text3:#9CA3AF;
   --sidebar:#18181B;--sidebar2:#27272A;--sidebar-text:#E4E4E7;--sidebar-dim:#71717A;
   --blue:#3B82F6;--purple:#8B5CF6;--green:#10B981;--orange:#F59E0B;--red:#EF4444;
-  --rateada:#8B5CF6;--parcelada:#3B82F6;--recorrente:#10B981;--normal:#6B7280;
+  --rateada:#8B5CF6;--parcelada:#3B82F6;--recorrente:#10B981;--normal:#6B7280;--terceiro:#F59E0B;
   --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
   --shadow-md:0 4px 12px rgba(0,0,0,.1);
 }
@@ -146,6 +146,10 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .tipo-pill.active-rateada{border-color:var(--rateada);background:#FAF5FF;color:var(--rateada);font-weight:600}
 .tipo-pill.active-parcelada{border-color:var(--parcelada);background:#EFF6FF;color:var(--parcelada);font-weight:600}
 .tipo-pill.active-recorrente{border-color:var(--recorrente);background:#F0FDF4;color:var(--recorrente);font-weight:600}
+.tipo-pill.active-minha{border-color:var(--text);background:var(--surface2);color:var(--text);font-weight:600}
+.tipo-pill.active-rateada{border-color:var(--rateada);background:#FAF5FF;color:var(--rateada);font-weight:600}
+.tipo-pill.active-terceiro{border-color:var(--terceiro);background:#FFFBEB;color:var(--terceiro);font-weight:600}
+.badge-ter{background:#FFFBEB;color:#F59E0B}
 .tipo-pill.active-normal{border-color:var(--text);background:var(--surface2);color:var(--text);font-weight:600}
 .info-pill{padding:8px 12px;border-radius:8px;font-size:11px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);margin-bottom:12px}
 .info-pill b{color:var(--text)}
@@ -244,15 +248,6 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   <div class="modal-box">
     <div class="modal-title">Nova Despesa</div>
 
-    <!-- TIPO -->
-    <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Tipo</div>
-    <div class="tipo-pills">
-      <div class="tipo-pill" id="pill-normal" onclick="selecionarTipo('normal')">Normal</div>
-      <div class="tipo-pill" id="pill-rateada" onclick="selecionarTipo('rateada')">Rateada</div>
-      <div class="tipo-pill" id="pill-parcelada" onclick="selecionarTipo('parcelada')">Parcelada</div>
-      <div class="tipo-pill" id="pill-recorrente" onclick="selecionarTipo('recorrente')">Recorrente</div>
-    </div>
-
     <!-- SMS -->
     <div class="field">
       <label>SMS (opcional)</label>
@@ -277,23 +272,16 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     </div>
     <div class="field"><label>Observação</label><input type="text" id="transObs" placeholder="Opcional..."></div>
 
-    <!-- RATEIO (visível quando tipo=rateada) -->
-    <div id="secRateio" style="display:none">
-      <div style="font-size:11px;font-weight:600;color:var(--rateada);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">&#9670; Rateio</div>
-      <div class="row2">
-        <div class="field"><label>Dividir com</label>
-          <select id="transDivide"><option value="">— ninguém —</option></select>
-        </div>
-        <div class="field"><label>% de quem divide</label>
-          <input type="number" id="transPercentOutro" min="1" max="99" value="50" oninput="onPercentInput()">
-        </div>
-      </div>
-      <div class="info-pill" id="rateioInfo">Você paga <b>50%</b> · Outro paga <b>50%</b></div>
+    <!-- DIMENSÃO 1: TIPO DE REPETIÇÃO -->
+    <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px">Frequência</div>
+    <div class="tipo-pills">
+      <div class="tipo-pill" id="pill-normal" onclick="selecionarTipo('normal')">Normal</div>
+      <div class="tipo-pill" id="pill-parcelada" onclick="selecionarTipo('parcelada')">Parcelada</div>
+      <div class="tipo-pill" id="pill-recorrente" onclick="selecionarTipo('recorrente')">Recorrente</div>
     </div>
 
-    <!-- PARCELADO (visível quando tipo=parcelada) -->
-    <div id="secParcelado" style="display:none">
-      <div style="font-size:11px;font-weight:600;color:var(--parcelada);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">&#9670; Parcelamento</div>
+    <!-- PARCELADO -->
+    <div id="secParcelado" style="display:none;margin-bottom:12px">
       <div class="row2">
         <div class="field"><label>Nº de Parcelas</label>
           <input type="number" id="transParcelas" min="2" max="60" value="2" oninput="onValorInput()">
@@ -305,13 +293,41 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="info-pill" id="parcelaInfo">2 lançamentos de <b>R$ 0,00</b> a partir da data</div>
     </div>
 
-    <!-- RECORRENTE (visível quando tipo=recorrente) -->
-    <div id="secRecorrente" style="display:none">
-      <div style="font-size:11px;font-weight:600;color:var(--recorrente);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">&#9670; Recorrência</div>
+    <!-- RECORRENTE -->
+    <div id="secRecorrente" style="display:none;margin-bottom:12px">
       <div class="field"><label>Repetir até</label>
         <input type="date" id="transDataFinal">
       </div>
       <div class="info-pill">Cria um lançamento idêntico em cada mês até a data final.</div>
+    </div>
+
+    <!-- DIMENSÃO 2: PARA QUEM -->
+    <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px">Para quem</div>
+    <div class="tipo-pills">
+      <div class="tipo-pill" id="pill-minha" onclick="selecionarDono('minha')">Minha</div>
+      <div class="tipo-pill" id="pill-rateada" onclick="selecionarDono('rateada')">Rateada</div>
+      <div class="tipo-pill" id="pill-terceiro" onclick="selecionarDono('terceiro')">De terceiro</div>
+    </div>
+
+    <!-- RATEIO -->
+    <div id="secRateio" style="display:none;margin-bottom:12px">
+      <div class="row2">
+        <div class="field"><label>Dividir com</label>
+          <select id="transDivide"><option value="">— escolha —</option></select>
+        </div>
+        <div class="field"><label>% de quem divide</label>
+          <input type="number" id="transPercentOutro" min="1" max="99" value="50" oninput="onPercentInput()">
+        </div>
+      </div>
+      <div class="info-pill" id="rateioInfo">Você paga <b>50%</b> · Outro paga <b>50%</b></div>
+    </div>
+
+    <!-- TERCEIRO -->
+    <div id="secTerceiro" style="display:none;margin-bottom:12px">
+      <div class="field"><label>Despesa de</label>
+        <select id="transTerceiro"><option value="">— escolha —</option></select>
+      </div>
+      <div class="info-pill">Esta despesa é de outra pessoa, paga no seu cartão. Entra como a receber.</div>
     </div>
 
     <div class="modal-footer">
@@ -360,6 +376,7 @@ const state={usuario:'',email:'',cartao:'amex',mes:null,meses:[],transacoes:[],p
 const mesesNomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 let mostrarAnteriores=false;
 let tipoAtual='normal';
+let donoAtual='minha';
 
 /* ── AUTH ── */
 async function fazerLogin(){
@@ -510,19 +527,22 @@ function renderDashboard(){
 
   const todas=state.transacoes.filter(t=>t.mes===state.mes&&t.cartao===state.cartao);
   const totalGeral=todas.reduce((s,t)=>s+t.valor,0);
-  const minhasGeral=todas.reduce((s,t)=>s+(t.valor*(t.percentMeu||100)/100),0);
+  const minhasGeral=todas.filter(t=>!t.terceiro).reduce((s,t)=>s+(t.valor*(t.percentMeu||100)/100),0);
+  const totalTerceiros=terceiros.reduce((s,t)=>s+t.valor,0);
 
-  // Separar por tipo
-  const rateadas  =todas.filter(t=>t.tipo==='rateada');
-  const parceladas=todas.filter(t=>t.tipo==='parcelada');
-  const recorrentes=todas.filter(t=>t.tipo==='recorrente');
-  const normais   =todas.filter(t=>!t.tipo||t.tipo==='normal');
+  // Separar por tipo e dono
+  const terceiros  =todas.filter(t=>t.terceiro);
+  const rateadas   =todas.filter(t=>t.rateada&&!t.terceiro);
+  const parceladas =todas.filter(t=>t.tipo==='parcelada'&&!t.terceiro&&!t.rateada);
+  const recorrentes=todas.filter(t=>t.tipo==='recorrente'&&!t.terceiro&&!t.rateada);
+  const normais    =todas.filter(t=>(!t.tipo||t.tipo==='normal')&&!t.terceiro&&!t.rateada);
 
   const resumoBar=todas.length?`
     <div class="resumo-bar">
       <span>Total <b>${fmt(totalGeral)}</b></span>
       <span>Suas <b>${fmt(minhasGeral)}</b></span>
-      ${totalGeral-minhasGeral>0?`<span style="color:var(--text2)">Deles <b>${fmt(totalGeral-minhasGeral)}</b></span>`:''}
+      ${totalGeral-minhasGeral-totalTerceiros>0?`<span style="color:var(--text2)">Deles <b>${fmt(totalGeral-minhasGeral-totalTerceiros)}</b></span>`:''}
+      ${totalTerceiros>0?`<span style="color:var(--terceiro)">Terceiros <b>${fmt(totalTerceiros)}</b></span>`:''}
     </div>`:'';
 
   document.getElementById('mainContent').innerHTML=`
@@ -540,12 +560,13 @@ function renderDashboard(){
     ${grupoHtml('Rateadas','var(--rateada)','#FAF5FF',rateadas)}
     ${grupoHtml('Parceladas','var(--parcelada)','#EFF6FF',parceladas)}
     ${grupoHtml('Recorrentes','var(--recorrente)','#F0FDF4',recorrentes)}
+    ${grupoHtml('De Terceiros','var(--terceiro)','#FFFBEB',terceiros)}
     ${grupoHtml('Normais','var(--normal)','var(--surface2)',normais)}
   `;
   document.getElementById('headerTitle').textContent=mesLabel.charAt(0).toUpperCase()+mesLabel.slice(1);
 
   // Expandir grupos com itens
-  ['grp-Rateadas','grp-Parceladas','grp-Recorrentes','grp-Normais'].forEach(id=>{
+  ['grp-Rateadas','grp-Parceladas','grp-Recorrentes','grp-De Terceiros','grp-Normais'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.maxHeight=el.scrollHeight+'px';
   });
@@ -586,7 +607,8 @@ function tabelaRows(trans){
     const dt=t.data?t.data.split('-').reverse().join('/'):'—';
     const obs=t.obs?`<div class="t-obs">${t.obs}</div>`:'';
     let info='';
-    if(t.tipo==='rateada')info=`<span class="badge badge-rat">${t.divide||''} · ${t.percentOutro||50}%</span>`;
+    if(t.rateada)info=`<span class="badge badge-rat">${t.divide||''} · ${t.percentOutro||50}% deles</span>`;
+    if(t.terceiro)info=`<span class="badge badge-ter">de ${t.terceiroNome||''}</span>`;
     if(t.tipo==='parcelada')info=`<span class="badge badge-parc">${t.numParcela}/${t.totalParcelas}</span>`;
     if(t.tipo==='recorrente')info=`<span class="badge badge-rec">↺ recorrente</span>`;
     return `<tr>
@@ -634,12 +656,20 @@ function excluirTransacao(id){
 /* ── NOVA TRANSAÇÃO ── */
 function selecionarTipo(tipo){
   tipoAtual=tipo;
-  ['normal','rateada','parcelada','recorrente'].forEach(t=>{
+  ['normal','parcelada','recorrente'].forEach(t=>{
     document.getElementById('pill-'+t).className='tipo-pill'+(tipo===t?' active-'+t:'');
   });
-  document.getElementById('secRateio').style.display=tipo==='rateada'?'block':'none';
   document.getElementById('secParcelado').style.display=tipo==='parcelada'?'block':'none';
   document.getElementById('secRecorrente').style.display=tipo==='recorrente'?'block':'none';
+}
+
+function selecionarDono(dono){
+  donoAtual=dono;
+  ['minha','rateada','terceiro'].forEach(d=>{
+    document.getElementById('pill-'+d).className='tipo-pill'+(dono===d?' active-'+d:'');
+  });
+  document.getElementById('secRateio').style.display=dono==='rateada'?'block':'none';
+  document.getElementById('secTerceiro').style.display=dono==='terceiro'?'block':'none';
 }
 
 function abrirNovaTransacao(){
@@ -657,6 +687,7 @@ function abrirNovaTransacao(){
   document.getElementById('transData').value=h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');
   document.getElementById('transCartao').value=state.cartao;
   selecionarTipo('normal');
+  selecionarDono('minha');
   document.getElementById('transacaoModal').classList.add('active');
 }
 
@@ -689,10 +720,11 @@ function extrairSMS(){
 }
 
 function renderPessoasSelect(){
+  const opts=state.pessoas.filter(p=>p!=='Você').map(p=>`<option value="${p}">${p}</option>`).join('');
   const sel=document.getElementById('transDivide');
-  if(!sel)return;
-  sel.innerHTML='<option value="">— ninguém —</option>'+
-    state.pessoas.filter(p=>p!=='Você').map(p=>`<option value="${p}">${p}</option>`).join('');
+  if(sel)sel.innerHTML='<option value="">— escolha —</option>'+opts;
+  const sel2=document.getElementById('transTerceiro');
+  if(sel2)sel2.innerHTML='<option value="">— escolha —</option>'+opts;
 }
 
 function salvarTransacao(){
@@ -707,16 +739,24 @@ function salvarTransacao(){
     const parsearData=s=>{const[y,m,dia]=s.split('-').map(Number);return new Date(y,m-1,dia);};
     const baseT={estab,data,cartao,obs:obs||undefined};
 
-    if(tipoAtual==='normal'){
-      const t={...baseT,id:uid(),mes:mesDeData(data),valor,tipo:'normal',percentMeu:100};
-      push(t);
-    }
-    else if(tipoAtual==='rateada'){
+    // Dimensão 1: dono / rateio
+    let donoExtra={};
+    if(donoAtual==='rateada'){
       const divide=document.getElementById('transDivide').value;
+      if(!divide){alert('Escolha com quem ratear');return}
       const percentOutro=parseInt(document.getElementById('transPercentOutro').value)||50;
-      const percentMeu=100-percentOutro;
-      const t={...baseT,id:uid(),mes:mesDeData(data),valor,tipo:'rateada',divide,percentOutro,percentMeu};
-      push(t);
+      donoExtra={rateada:true,divide,percentOutro,percentMeu:100-percentOutro};
+    } else if(donoAtual==='terceiro'){
+      const terceiro=document.getElementById('transTerceiro').value;
+      if(!terceiro){alert('Escolha para quem é a despesa');return}
+      donoExtra={terceiro:true,terceiroNome:terceiro,percentMeu:0};
+    } else {
+      donoExtra={percentMeu:100};
+    }
+
+    // Dimensão 2: frequência
+    if(tipoAtual==='normal'){
+      push({...baseT,id:uid(),mes:mesDeData(data),valor,tipo:'normal',...donoExtra});
     }
     else if(tipoAtual==='parcelada'){
       const n=parseInt(document.getElementById('transParcelas').value)||2;
@@ -726,7 +766,7 @@ function salvarTransacao(){
       let d=parsearData(data);
       for(let i=0;i<n;i++){
         const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-        push({...baseT,id:uid(),mes:mesId,valor:valorParc,tipo:'parcelada',numParcela:i+1,totalParcelas:n,percentMeu:100,grupoId:gid});
+        push({...baseT,id:uid(),mes:mesId,valor:valorParc,tipo:'parcelada',numParcela:i+1,totalParcelas:n,grupoId:gid,...donoExtra});
         d.setMonth(d.getMonth()+1);
       }
     }
@@ -739,7 +779,7 @@ function salvarTransacao(){
       let count=0;
       while(d<=fim&&count<120){
         const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-        push({...baseT,id:uid(),mes:mesId,valor,tipo:'recorrente',percentMeu:100,grupoId:gid});
+        push({...baseT,id:uid(),mes:mesId,valor,tipo:'recorrente',grupoId:gid,...donoExtra});
         d.setMonth(d.getMonth()+1);count++;
       }
     }
