@@ -378,6 +378,7 @@ const mesesNomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','N
 let mostrarAnteriores=false;
 let tipoAtual='normal';
 let donoAtual='minha';
+let editandoId=null;
 
 /* ── AUTH ── */
 async function fazerLogin(){
@@ -617,7 +618,10 @@ function tabelaRows(trans){
       <td><div class="t-estab">${t.estab||''}</div>${obs}</td>
       <td class="t-valor">${fmt(t.valor)}</td>
       <td class="t-extra">${info}</td>
-      <td class="t-action"><button class="del-btn" onclick="excluirTransacao('${t.id}')">&#10005;</button></td>
+      <td class="t-action" style="white-space:nowrap">
+        <button class="del-btn" style="margin-right:2px" onclick="editarTransacao('${t.id}')">&#9998;</button>
+        <button class="del-btn" onclick="excluirTransacao('${t.id}')">&#10005;</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -655,6 +659,43 @@ function excluirTransacao(id){
   salvarDados();renderMeses();renderDashboard();
 }
 
+/* ── EDITAR TRANSAÇÃO ── */
+function editarTransacao(id){
+  const t=state.transacoes.find(x=>String(x.id)===String(id));
+  if(!t)return;
+  editandoId=id;
+
+  // Preencher campos
+  document.getElementById('smsInput').value='';
+  document.getElementById('transEstab').value=t.estab||'';
+  document.getElementById('transValor').value=t.valor||'';
+  document.getElementById('transObs').value=t.obs||'';
+  document.getElementById('transCartao').value=t.cartao||state.cartao;
+  document.getElementById('transData').value=t.data||'';
+  document.getElementById('transPercentOutro').value=t.percentOutro||50;
+  document.getElementById('transDivide').value=t.divide||'';
+  document.getElementById('transTerceiro').value=t.terceiroNome||'';
+
+  // Tipo de frequência
+  const tipo=t.tipo||'normal';
+  selecionarTipo(tipo);
+  if(tipo==='parcelada'){
+    document.getElementById('transParcelas').value=t.totalParcelas||2;
+    document.getElementById('transValorParcela').value=t.valor||'';
+  }
+  if(tipo==='recorrente'){
+    document.getElementById('transDataFinal').value='';
+  }
+
+  // Dono
+  if(t.terceiro) selecionarDono('terceiro');
+  else if(t.rateada) selecionarDono('rateada');
+  else selecionarDono('minha');
+
+  document.querySelector('#transacaoModal .modal-title').textContent='Editar Despesa';
+  document.getElementById('transacaoModal').classList.add('active');
+}
+
 /* ── NOVA TRANSAÇÃO ── */
 function selecionarTipo(tipo){
   tipoAtual=tipo;
@@ -690,6 +731,8 @@ function abrirNovaTransacao(){
   document.getElementById('transCartao').value=state.cartao;
   selecionarTipo('normal');
   selecionarDono('minha');
+  editandoId=null;
+  document.querySelector('#transacaoModal .modal-title').textContent='Nova Despesa';
   document.getElementById('transacaoModal').classList.add('active');
 }
 
@@ -740,6 +783,37 @@ function salvarTransacao(){
 
     const parsearData=s=>{const[y,m,dia]=s.split('-').map(Number);return new Date(y,m-1,dia);};
     const baseT={estab,data,cartao,obs:obs||undefined};
+
+    // Modo edição — atualiza só os campos simples da transação
+    if(editandoId){
+      const idx=state.transacoes.findIndex(x=>String(x.id)===String(editandoId));
+      if(idx>-1){
+        const t=state.transacoes[idx];
+        t.estab=estab;
+        t.valor=valor;
+        t.data=data;
+        t.obs=obs||undefined;
+        t.cartao=document.getElementById('transCartao').value;
+        if(donoAtual==='rateada'){
+          const divide=document.getElementById('transDivide').value;
+          const percentOutro=parseInt(document.getElementById('transPercentOutro').value)||50;
+          t.rateada=true;t.divide=divide;t.percentOutro=percentOutro;t.percentMeu=100-percentOutro;t.terceiro=false;t.terceiroNome=undefined;
+        } else if(donoAtual==='terceiro'){
+          const terceiro=document.getElementById('transTerceiro').value;
+          t.terceiro=true;t.terceiroNome=terceiro;t.percentMeu=0;t.rateada=false;t.divide=undefined;
+        } else {
+          t.rateada=false;t.terceiro=false;t.divide=undefined;t.terceiroNome=undefined;t.percentMeu=100;
+        }
+        // Atualizar o mes se a data mudou
+        const novoMes=mesDeData(data);
+        if(t.mes!==novoMes){
+          if(!state.meses.includes(novoMes))state.meses.push(novoMes);
+          t.mes=novoMes;
+        }
+      }
+      salvarDados();fecharModal('transacaoModal');renderMeses();renderDashboard();
+      return;
+    }
 
     // Dimensão 1: dono / rateio
     let donoExtra={};
