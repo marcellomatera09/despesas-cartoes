@@ -508,6 +508,7 @@ function fmt(v){return'R$ '+(+v||0).toFixed(2).replace('.',',').replace(/\B(?=(\
 
 /* ── DASHBOARD ── */
 function renderDashboard(){
+  try{
   if(!state.mes) state.mes=mesVigente();
   const mesLabel=new Date(state.mes+'-15').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const fech=getFechamento(state.mes);
@@ -561,46 +562,43 @@ function renderDashboard(){
     ${grupoHtml('Rateadas','var(--rateada)','#FAF5FF',rateadas)}
     ${grupoHtml('Parceladas','var(--parcelada)','#EFF6FF',parceladas)}
     ${grupoHtml('Recorrentes','var(--recorrente)','#F0FDF4',recorrentes)}
-    ${grupoHtml('De Terceiros','var(--terceiro)','#FFFBEB',terceiros)}
+    ${grupoHtml('DeTerceiros','var(--terceiro)','#FFFBEB',terceiros)}
     ${grupoHtml('Normais','var(--normal)','var(--surface2)',normais)}
   `;
   document.getElementById('headerTitle').textContent=mesLabel.charAt(0).toUpperCase()+mesLabel.slice(1);
 
   // Expandir grupos com itens
-  ['grp-Rateadas','grp-Parceladas','grp-Recorrentes','grp-De Terceiros','grp-Normais'].forEach(id=>{
+  ['grp-Rateadas','grp-Parceladas','grp-Recorrentes','grp-DeTerceiros','grp-Normais'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.maxHeight=el.scrollHeight+'px';
   });
-}
+  }catch(e){document.getElementById('mainContent').innerHTML='<div style="padding:20px;color:red">Erro: '+e.message+'</div>';console.error(e);}}
 
-function grupoHtml(titulo,cor,bg,trans){
-  const gid='grp-'+titulo;
+function grupoHtml(id,cor,bg,trans){
+  const label={'Rateadas':'Rateadas','Parceladas':'Parceladas','Recorrentes':'Recorrentes','DeTerceiros':'De Terceiros','Normais':'Normais'}[id]||id;
+  const gid='grp-'+id;
+  const aid='arr-'+id;
   const total=trans.reduce((s,t)=>s+t.valor,0);
   const minhas=trans.reduce((s,t)=>s+(t.valor*(t.percentMeu||100)/100),0);
   const rows=trans.length?tabelaRows(trans):'<div style="padding:10px 12px;font-size:12px;color:var(--text3)">Nenhuma.</div>';
-  return `<div class="grupo">
-    <div class="grupo-header" onclick="toggleGrupo('${gid}')">
-      <div class="grupo-left">
-        <div class="grupo-dot" style="background:${cor}"></div>
-        <div class="grupo-titulo">${titulo}</div>
-        <div class="grupo-badge" style="background:${bg};color:${cor}">${trans.length}</div>
-      </div>
-      <div class="grupo-right">
-        ${minhas<total?`<span class="grupo-suas">Suas ${fmt(minhas)}</span>`:''}
-        <span class="grupo-total">${fmt(total)}</span>
-        <span class="grupo-arrow" id="arr-${titulo}">▾</span>
-      </div>
-    </div>
-    <div class="grupo-body" id="${gid}" style="max-height:0">
-      <table class="tabela">
-        <thead><tr>
-          <th>Data</th><th>Estabelecimento</th><th style="text-align:right">Valor</th>
-          <th>Info</th><th></th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>
-  </div>`;
+  return '<div class="grupo">'
+    +'<div class="grupo-header" onclick="toggleGrupo(''+gid+'')">'
+    +'<div class="grupo-left">'
+    +'<div class="grupo-dot" style="background:'+cor+'"></div>'
+    +'<div class="grupo-titulo">'+label+'</div>'
+    +'<div class="grupo-badge" style="background:'+bg+';color:'+cor+'">'+trans.length+'</div>'
+    +'</div>'
+    +'<div class="grupo-right">'
+    +(minhas<total?'<span class="grupo-suas">Suas '+fmt(minhas)+'</span>':'')
+    +'<span class="grupo-total">'+fmt(total)+'</span>'
+    +'<span class="grupo-arrow" id="'+aid+'">&#9662;</span>'
+    +'</div></div>'
+    +'<div class="grupo-body" id="'+gid+'" style="max-height:0">'
+    +'<table class="tabela"><thead><tr>'
+    +'<th>Data</th><th>Estabelecimento</th><th style="text-align:right">Valor</th>'
+    +'<th>Info</th><th></th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table>'
+    +'</div></div>';
 }
 
 function tabelaRows(trans){
@@ -622,13 +620,14 @@ function tabelaRows(trans){
   }).join('');
 }
 
-function toggleGrupo(id){
-  const el=document.getElementById(id);
-  const titulo=id.replace('grp-','');
-  const arr=document.getElementById('arr-'+titulo);
+function toggleGrupo(gid){
+  const el=document.getElementById(gid);
+  if(!el)return;
+  const aid='arr-'+gid.replace('grp-','');
+  const arr=document.getElementById(aid);
   const open=el.style.maxHeight!=='0px'&&el.style.maxHeight!=='';
-  if(open){el.style.maxHeight='0px';if(arr)arr.style.transform='rotate(-90deg)';}
-  else{el.style.maxHeight=el.scrollHeight+'px';if(arr)arr.style.transform='rotate(0deg)';}
+  if(open){el.style.maxHeight='0px';if(arr)arr.innerHTML='&#9656;';}
+  else{el.style.maxHeight=el.scrollHeight+'px';if(arr)arr.innerHTML='&#9662;';}
 }
 
 function excluirTransacao(id){
