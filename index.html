@@ -895,21 +895,29 @@ function salvarTransacao(){
       const valorParcInput=parseFloat(document.getElementById('transValorParcela').value);
       const valorParc=valorParcInput||Math.round(valor/n*100)/100;
       const gid=uid();
-      let d=parsearData(data);
+      const cartaoSel=document.getElementById('transCartao').value;
+      // Parcela 1: respeita fechamento do cartão
+      const mesParcela1=mesDeDataCartao(data,cartaoSel);
+      const [mp1y,mp1m]=mesParcela1.split('-').map(Number);
       for(let i=0;i<n;i++){
-        const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+        // Avança a partir do mês da parcela 1
+        const dt=new Date(mp1y,mp1m-1+i,1);
+        const mesId=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
         push({...baseT,id:uid(),mes:mesId,valor:valorParc,tipo:'parcelada',numParcela:i+1,totalParcelas:n,grupoId:gid,...donoExtra});
-        d.setMonth(d.getMonth()+1);
       }
     }
     else if(tipoAtual==='recorrente'){
       const dataFinal=document.getElementById('transDataFinal').value;
       if(!dataFinal){alert('Informe a data final');return}
       const gid=uid();
-      let d=parsearData(data);
-      const fim=parsearData(dataFinal);
+      const cartaoSel=document.getElementById('transCartao').value;
+      // Recorrente 1: respeita fechamento
+      const mesRec1=mesDeDataCartao(data,cartaoSel);
+      const [mr1y,mr1m]=mesRec1.split('-').map(Number);
+      const fimRec=parsearData(dataFinal);
       let count=0;
-      while(d<=fim&&count<120){
+      let d=new Date(mr1y,mr1m-1,1);
+      while(d<=fimRec&&count<120){
         const mesId=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
         push({...baseT,id:uid(),mes:mesId,valor,tipo:'recorrente',grupoId:gid,...donoExtra});
         d.setMonth(d.getMonth()+1);count++;
