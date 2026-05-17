@@ -422,6 +422,29 @@ function carregarDados(){
   }
   renderPessoasSelect();
 }
+function corrigirMesesExistentes(){
+  let alterou=false;
+  state.transacoes.forEach(t=>{
+    if(!t.data)return;
+    const [y,m,d]=t.data.split('-').map(Number);
+    const fech=t.cartao==='inter'?state.config.inter:state.config.amex;
+    let mesCorreto;
+    if(d>fech){
+      const dt=new Date(y,m,1);
+      mesCorreto=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    } else {
+      mesCorreto=t.data.slice(0,7);
+    }
+    if(t.mes!==mesCorreto){
+      console.log('Corrigindo '+t.estab+': '+t.mes+' -> '+mesCorreto);
+      t.mes=mesCorreto;
+      if(!state.meses.includes(mesCorreto))state.meses.push(mesCorreto);
+      alterou=true;
+    }
+  });
+  if(alterou){salvarDados();console.log('Meses corrigidos e salvos.');}
+}
+
 function gerarMesesPadrao(){
   const arr=[];
   for(let i=-3;i<=2;i++){
@@ -1001,7 +1024,7 @@ window.addEventListener('load',()=>{
       document.getElementById('userEmail').textContent=session.user.email.split('@')[0];
       document.getElementById('loginPage').classList.remove('active');
       document.getElementById('mainLayout').classList.remove('hidden');
-      carregarDados();init();
+      carregarDados();corrigirMesesExistentes();init();
     }
   });
 });
