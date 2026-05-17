@@ -865,7 +865,16 @@ function salvarTransacao(){
 }
 
 function uid(){return String(Date.now())+String(Math.floor(Math.random()*99999));}
-function mesDeData(data){return data.slice(0,7);}
+function mesDeData(data){
+  const [y,m,d]=data.split('-').map(Number);
+  const fech=state.cartao==='inter'?state.config.inter:state.config.amex;
+  // Se o dia da compra é APÓS o fechamento, entra no mês seguinte
+  if(d>fech){
+    const dt=new Date(y,m,1); // mês seguinte (m já é 0-based +1 = próximo)
+    return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+  }
+  return data.slice(0,7);
+}
 function push(t){
   state.transacoes.push(t);
   if(!state.meses.includes(t.mes))state.meses.push(t.mes);
