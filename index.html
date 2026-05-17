@@ -423,21 +423,75 @@ function carregarDados(){
   renderPessoasSelect();
 }
 function corrigirMesesExistentes(){
-  // Só reclassifica despesas simples (normal, rateada, terceiro)
-  // Parceladas e recorrentes têm mês definido na criação — não mexer
   let alterou=false;
+
+  // 1. Despesas simples (normal, rateada, terceiro) — classifica pela data vs fechamento
   state.transacoes.forEach(t=>{
     if(!t.data)return;
     if(t.tipo==='parcelada'||t.tipo==='recorrente')return;
     const mesCorreto=mesDeDataCartao(t.data,t.cartao);
     if(t.mes!==mesCorreto){
-      console.log('Corrigindo '+t.estab+': '+t.mes+' -> '+mesCorreto);
       t.mes=mesCorreto;
       if(!state.meses.includes(mesCorreto))state.meses.push(mesCorreto);
       alterou=true;
     }
   });
-  if(alterou){salvarDados();console.log('Meses corrigidos e salvos.');}
+
+  // 2. Parceladas — agrupa por grupoId, ordena por numParcela, recalcula mês sequencial
+  const grupos={};
+  state.transacoes.filter(t=>t.tipo==='parcelada'&&t.grupoId).forEach(t=>{
+    if(!grupos[t.grupoId])grupos[t.grupoId]=[];
+    grupos[t.grupoId].push(t);
+  });
+  Object.values(grupos).forEach(parcelas=>{
+    parcelas.sort((a,b)=>(a.numParcela||0)-(b.numParcela||0));
+    const p1=parcelas[0];
+    const mesParcela1=mesDeDataCartao(p1.data,p1.cartao);
+    const [y,m]=mesParcela1.split('-').map(Number);
+    parcelas.forEach((p,i)=>{
+      const dt=new Date(y,m-1+i,1);
+      const mesId=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+      if(p.mes!==mesId){
+        p.mes=mesId;
+        if(!state.meses.includes(mesId))state.meses.push(mesId);
+        alterou=true;
+      }
+    });
+  });
+
+  // 3. Recorrentes — agrupa por grupoId, ordena por data, recalcula mês sequencial
+  const grRec={};
+  state.transacoes.filter(t=>t.tipo==='recorrente'&&t.grupoId).forEach(t=>{
+    if(!grRec[t.grupoId])grRec[t.grupoId]=[];
+    grRec[t.grupoId].push(t);
+  });
+  Object.values(grRec).forEach(itens=>{
+    itens.sort((a,b)=>a.data>b.data?1:-1);
+    const r1=itens[0];
+    const mesRec1=mesDeDataCartao(r1.data,r1.cartao);
+    const [y,m]=mesRec1.split('-').map(Number);
+    itens.forEach((r,i)=>{
+      const dt=new Date(y,m-1+i,1);
+      const mesId=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+      if(r.mes!==mesId){
+        r.mes=mesId;
+        if(!state.meses.includes(mesId))state.meses.push(mesId);
+        alterou=true;
+      }
+    });
+  });
+
+  // 4. Parceladas/recorrentes sem grupoId — classifica individualmente pela data
+  state.transacoes.filter(t=>(t.tipo==='parcelada'||t.tipo==='recorrente')&&!t.grupoId).forEach(t=>{
+    const mesCorreto=mesDeDataCartao(t.data,t.cartao);
+    if(t.mes!==mesCorreto){
+      t.mes=mesCorreto;
+      if(!state.meses.includes(mesCorreto))state.meses.push(mesCorreto);
+      alterou=true;
+    }
+  });
+
+  if(alterou){salvarDados();console.log('Meses corrigidos.');}
 }
 
 // Reclassifica despesas simples de um mês/cartão específico (após mudar fechamento)
