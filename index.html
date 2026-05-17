@@ -423,18 +423,13 @@ function carregarDados(){
   renderPessoasSelect();
 }
 function corrigirMesesExistentes(){
+  // Só reclassifica despesas simples (normal, rateada, terceiro)
+  // Parceladas e recorrentes têm mês definido na criação — não mexer
   let alterou=false;
   state.transacoes.forEach(t=>{
     if(!t.data)return;
-    const [y,m,d]=t.data.split('-').map(Number);
-    const fech=t.cartao==='inter'?state.config.inter:state.config.amex;
-    let mesCorreto;
-    if(d>fech){
-      const dt=new Date(y,m,1);
-      mesCorreto=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
-    } else {
-      mesCorreto=t.data.slice(0,7);
-    }
+    if(t.tipo==='parcelada'||t.tipo==='recorrente')return;
+    const mesCorreto=mesDeDataCartao(t.data,t.cartao);
     if(t.mes!==mesCorreto){
       console.log('Corrigindo '+t.estab+': '+t.mes+' -> '+mesCorreto);
       t.mes=mesCorreto;
@@ -443,6 +438,35 @@ function corrigirMesesExistentes(){
     }
   });
   if(alterou){salvarDados();console.log('Meses corrigidos e salvos.');}
+}
+
+// Reclassifica despesas simples de um mês/cartão específico (após mudar fechamento)
+function reclassificarMes(mesId,cartao){
+  let alterou=false;
+  state.transacoes.forEach(t=>{
+    if(t.cartao!==cartao)return;
+    if(t.tipo==='parcelada'||t.tipo==='recorrente')return;
+    if(!t.data)return;
+    // Só reclassifica se a data de compra pertence a esse ciclo de fatura
+    const mesCorreto=mesDeDataCartao(t.data,t.cartao);
+    if(t.mes!==mesCorreto){
+      t.mes=mesCorreto;
+      if(!state.meses.includes(mesCorreto))state.meses.push(mesCorreto);
+      alterou=true;
+    }
+  });
+  if(alterou)salvarDados();
+  return alterou;
+}
+
+function mesDeDataCartao(data,cartao){
+  const [y,m,d]=data.split('-').map(Number);
+  const fech=cartao==='inter'?state.config.inter:state.config.amex;
+  if(d>fech){
+    const dt=new Date(y,m,1);
+    return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+  }
+  return data.slice(0,7);
 }
 
 function gerarMesesPadrao(){
@@ -525,7 +549,12 @@ function getFechamento(mesId){
 function salvarFechamento(){
   if(!_fechMes)return;
   state.fechamentos[state.cartao+'-'+_fechMes]=parseInt(document.getElementById('fechamentoData').value);
-  salvarDados();fecharModal('fechamentoModal');renderMeses();renderDashboard();
+  // Também atualizar o config padrão se quiser
+  salvarDados();
+  const houve=reclassificarMes(_fechMes,state.cartao);
+  fecharModal('fechamentoModal');
+  renderMeses();renderDashboard();
+  if(houve)alert('Despesas reclassificadas conforme novo fechamento.');
 }
 
 /* ── FORMATO ── */
@@ -580,7 +609,11 @@ function renderDashboard(){
           <div style="font-size:14px;font-weight:700;letter-spacing:-.2px">${mesLabel.charAt(0).toUpperCase()+mesLabel.slice(1)}</div>
           ${fech?`<div style="font-size:11px;color:var(--text2);margin-top:2px">Fecha dia ${fech}</div>`:''}
         </div>
-        <button class="btn btn-sm" onclick="gerarRelatorio()">&#128196; Relatório</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" onclick="gerarFatura('inter')" style="color:var(--inter-color);border-color:var(--inter-color)">&#128203; Fatura Inter</button>
+          <button class="btn btn-sm" onclick="gerarFatura('amex')" style="color:var(--amex-color);border-color:var(--amex-color)">&#128203; Fatura AMEX</button>
+          <button class="btn btn-sm" onclick="gerarRelatorio()">&#128196; Relatório</button>
+        </div>
       </div>
       <div class="cartao-grid">${cartoesHtml}</div>
       ${resumoBar}
@@ -888,16 +921,7 @@ function salvarTransacao(){
 }
 
 function uid(){return String(Date.now())+String(Math.floor(Math.random()*99999));}
-function mesDeData(data){
-  const [y,m,d]=data.split('-').map(Number);
-  const fech=state.cartao==='inter'?state.config.inter:state.config.amex;
-  // Se o dia da compra é APÓS o fechamento, entra no mês seguinte
-  if(d>fech){
-    const dt=new Date(y,m,1); // mês seguinte (m já é 0-based +1 = próximo)
-    return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
-  }
-  return data.slice(0,7);
-}
+function mesDeData(data){return mesDeDataCartao(data,state.cartao);}
 function push(t){
   state.transacoes.push(t);
   if(!state.meses.includes(t.mes))state.meses.push(t.mes);
@@ -928,6 +952,103 @@ function salvarConfig(){
   salvarDados();fecharModal('configModal');renderMeses();renderDashboard();
 }
 function fecharModal(id){document.getElementById(id).classList.remove('active');}
+
+/* ── FATURA PDF ── */
+function gerarFatura(cartao){
+  const mes=state.mes;
+  const mesLabel=new Date(mes+'-15').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const nomeCartao=cartao==='inter'?'Inter':'AMEX';
+  const cor=cartao==='inter'?[255,107,0]:[107,114,128];
+  if(!window.jspdf){
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload=()=>_gerarFatura(cartao,mes,mesLabel,nomeCartao,cor);
+    document.head.appendChild(s);
+  } else { _gerarFatura(cartao,mes,mesLabel,nomeCartao,cor); }
+}
+
+function _gerarFatura(cartao,mes,mesLabel,nomeCartao,cor){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,mar=14;let y=20;
+  const ln=(n=5)=>{y+=n;};
+  const rule=(c=[220,220,220])=>{doc.setDrawColor(...c);doc.line(mar,y,W-mar,y);ln(4);};
+
+  // Header
+  doc.setFillColor(...cor);
+  doc.rect(0,0,W,32,'F');
+  doc.setTextColor(255);
+  doc.setFont('helvetica','bold');doc.setFontSize(20);
+  doc.text('Fatura '+nomeCartao,mar,14);
+  doc.setFont('helvetica','normal');doc.setFontSize(10);
+  doc.text(mesLabel.charAt(0).toUpperCase()+mesLabel.slice(1),mar,21);
+  const fech=state.fechamentos[cartao+'-'+mes]||(cartao==='inter'?state.config.inter:state.config.amex);
+  doc.text('Fechamento: dia '+fech,mar,27);
+  doc.text('Gerado em '+new Date().toLocaleDateString('pt-BR'),W-mar,27,{align:'right'});
+  doc.setTextColor(0);
+  y=40;
+
+  const todas=state.transacoes.filter(t=>t.mes===mes&&t.cartao===cartao);
+  const totalGeral=todas.reduce((s,t)=>s+t.valor,0);
+  const minhasGeral=todas.filter(t=>!t.terceiro).reduce((s,t)=>s+(t.valor*(t.percentMeu||100)/100),0);
+  const totalTerceiros=todas.filter(t=>t.terceiro).reduce((s,t)=>s+t.valor,0);
+
+  // Resumo
+  doc.setFillColor(248,249,250);
+  doc.roundedRect(mar,y,W-mar*2,22,3,3,'F');
+  doc.setFont('helvetica','bold');doc.setFontSize(10);
+  doc.text('Total da Fatura',mar+4,y+7);
+  doc.setFontSize(16);doc.setTextColor(...cor);
+  doc.text(fmt(totalGeral),mar+4,y+16);
+  doc.setTextColor(0);doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('Suas: '+fmt(minhasGeral),W/2,y+7);
+  doc.text('De terceiros: '+fmt(totalTerceiros),W/2,y+14);
+  y+=28;rule();
+
+  // Grupos
+  const grupos=[
+    {label:'Recorrentes',itens:todas.filter(t=>t.tipo==='recorrente')},
+    {label:'Parceladas', itens:todas.filter(t=>t.tipo==='parcelada')},
+    {label:'Rateadas',   itens:todas.filter(t=>t.rateada)},
+    {label:'De Terceiros',itens:todas.filter(t=>t.terceiro)},
+    {label:'Normais',    itens:todas.filter(t=>(!t.tipo||t.tipo==='normal')&&!t.rateada&&!t.terceiro)},
+  ].filter(g=>g.itens.length>0);
+
+  grupos.forEach(g=>{
+    if(y>250){doc.addPage();y=16;}
+    const sub=g.itens.reduce((s,t)=>s+t.valor,0);
+    doc.setFillColor(240,242,245);
+    doc.rect(mar,y-3,W-mar*2,7,'F');
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(80,80,80);
+    doc.text(g.label.toUpperCase(),mar+2,y+1);
+    doc.text(fmt(sub),W-mar-2,y+1,{align:'right'});
+    doc.setTextColor(0);ln(8);
+
+    doc.setFont('helvetica','normal');doc.setFontSize(8);
+    g.itens.sort((a,b)=>a.data>b.data?1:-1).forEach(t=>{
+      if(y>272){doc.addPage();y=16;}
+      const dt=t.data?t.data.split('-').reverse().join('/'):'';
+      let extra='';
+      if(t.tipo==='parcelada')extra=t.numParcela+'/'+t.totalParcelas;
+      else if(t.rateada)extra=t.divide+' '+t.percentOutro+'%';
+      else if(t.terceiro)extra='→ '+t.terceiroNome;
+      doc.setTextColor(120);doc.text(dt,mar,y);
+      doc.setTextColor(0);doc.text((t.estab||'').substring(0,38),mar+16,y);
+      doc.setFont('helvetica','bold');doc.text(fmt(t.valor),W-mar-2,y,{align:'right'});doc.setFont('helvetica','normal');
+      if(extra){doc.setTextColor(100);doc.text(extra,mar+118,y);doc.setTextColor(0);}
+      if(t.obs){ln(4);doc.setTextColor(150);doc.setFontSize(7);doc.text('↳ '+t.obs,mar+16,y);doc.setFontSize(8);doc.setTextColor(0);}
+      ln(5);
+    });
+    ln(3);rule();
+  });
+
+  // Rodapé
+  doc.setFontSize(8);doc.setTextColor(150);
+  doc.text('Fatura '+nomeCartao+' — '+mesLabel,mar,285);
+  doc.text('Pág. 1',W-mar,285,{align:'right'});
+
+  doc.save('fatura_'+cartao+'_'+mes+'.pdf');
+}
 
 /* ── RELATÓRIO PDF ── */
 function gerarRelatorio(){
