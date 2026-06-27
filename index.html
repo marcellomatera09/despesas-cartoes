@@ -496,12 +496,13 @@ function corrigirMesesExistentes(){
 
 // Reclassifica despesas simples de um mês/cartão específico (após mudar fechamento)
 function reclassificarMes(mesId,cartao){
+  // Reclassifica TODAS as despesas simples do cartão (não só as do mesId),
+  // pois mudar o fechamento de um mês afeta a fronteira com os meses vizinhos.
   let alterou=false;
   state.transacoes.forEach(t=>{
     if(t.cartao!==cartao)return;
     if(t.tipo==='parcelada'||t.tipo==='recorrente')return;
     if(!t.data)return;
-    // Só reclassifica se a data de compra pertence a esse ciclo de fatura
     const mesCorreto=mesDeDataCartao(t.data,t.cartao);
     if(t.mes!==mesCorreto){
       t.mes=mesCorreto;
@@ -515,12 +516,20 @@ function reclassificarMes(mesId,cartao){
 
 function mesDeDataCartao(data,cartao){
   const [y,m,d]=data.split('-').map(Number);
-  const fech=cartao==='inter'?state.config.inter:state.config.amex;
-  if(d>fech){
-    const dt=new Date(y,m,1);
-    return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+  const mesBase=String(y)+'-'+String(m).padStart(2,'0');
+  const fechBase=getFechamentoFor(mesBase,cartao);
+  if(d>fechBase){
+    const dt=new Date(y,m,1); // mês seguinte
+    const mesSeguinte=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+    return mesSeguinte;
   }
-  return data.slice(0,7);
+  return mesBase;
+}
+// Pega o fechamento configurado para um mês/cartão específico, com fallback pro padrão
+function getFechamentoFor(mesId,cartao){
+  const key=cartao+'-'+mesId;
+  if(state.fechamentos[key]!=null) return state.fechamentos[key];
+  return cartao==='inter'?state.config.inter:state.config.amex;
 }
 
 function gerarMesesPadrao(){
@@ -597,8 +606,7 @@ function abrirFechamento(mesId,e){
   document.getElementById('fechamentoModal').classList.add('active');
 }
 function getFechamento(mesId){
-  const key=state.cartao+'-'+mesId;
-  return state.fechamentos[key]||(state.cartao==='inter'?state.config.inter:state.config.amex);
+  return getFechamentoFor(mesId,state.cartao);
 }
 function salvarFechamento(){
   if(!_fechMes)return;
@@ -894,33 +902,96 @@ function salvarTransacao(){
     const parsearData=s=>{const[y,m,dia]=s.split('-').map(Number);return new Date(y,m-1,dia);};
     const baseT={estab,data,cartao,obs:obs||undefined};
 
-    // Modo edição — atualiza só os campos simples da transação
+    // Modo edição
     if(editandoId){
       const idx=state.transacoes.findIndex(x=>String(x.id)===String(editandoId));
-      if(idx>-1){
-        const t=state.transacoes[idx];
-        t.estab=estab;
-        t.valor=valor;
-        t.data=data;
-        t.obs=obs||undefined;
-        t.cartao=document.getElementById('transCartao').value;
-        if(donoAtual==='rateada'){
-          const divide=document.getElementById('transDivide').value;
-          const percentOutro=parseInt(document.getElementById('transPercentOutro').value)||50;
-          t.rateada=true;t.divide=divide;t.percentOutro=percentOutro;t.percentMeu=100-percentOutro;t.terceiro=false;t.terceiroNome=undefined;
-        } else if(donoAtual==='terceiro'){
-          const terceiro=document.getElementById('transTerceiro').value;
-          t.terceiro=true;t.terceiroNome=terceiro;t.percentMeu=0;t.rateada=false;t.divide=undefined;
-        } else {
-          t.rateada=false;t.terceiro=false;t.divide=undefined;t.terceiroNome=undefined;t.percentMeu=100;
+      if(idx<0){fecharModal('transacaoModal');return;}
+      const orig=state.transacoes[idx];
+      const cartaoNovo=document.getElementById('transCartao').value;
+
+      // Monta o "dono" novo
+      let donoExtra={};
+      if(donoAtual==='rateada'){
+        const divide=document.getElementById('transDivide').value;
+        const percentOutro=parseInt(document.getElementById('transPercentOutro').value)||50;
+        donoExtra={rateada:true,divide,percentOutro,percentMeu:100-percentOutro,terceiro:false,terceiroNome:undefined};
+      } else if(donoAtual==='terceiro'){
+        const terceiro=document.getElementById('transTerceiro').value;
+        donoExtra={terceiro:true,terceiroNome:terceiro,percentMeu:0,rateada:false,divide:undefined};
+      } else {
+        donoExtra={rateada:false,terceiro:false,divide:undefined,terceiroNome:undefined,percentMeu:100};
+      }
+
+      const fazSequencia=(orig.tipo==='parcelada'||orig.tipo==='recorrente')&&orig.grupoId;
+      const grupo=fazSequencia?state.transacoes.filter(x=>x.grupoId===orig.grupoId):[orig];
+      const dataMudou=orig.data!==data;
+      const valorMudou=orig.valor!==valor;
+
+      let aplicarATodos=false;
+      if(fazSequencia&&grupo.length>1){
+        aplicarATodos=confirm(
+          'Esta despesa faz parte de uma sequência '+(orig.tipo==='recorrente'?'recorrente':'parcelada')
+          +' com '+grupo.length+' lançamentos.'
+          +'\n\nOK = aplicar a TODOS (estabelecimento/valor/cartão/divisão; data ajusta a sequência inteira)'
+          +'\nCancelar = alterar só esta parcela/mês'
+        );
+      }
+
+      if(aplicarATodos){
+        // Aplica estab/obs/cartao/dono a todos
+        grupo.forEach(t=>{
+          t.estab=estab;t.obs=obs||undefined;t.cartao=cartaoNovo;
+          Object.assign(t,donoExtra);
+        });
+        if(orig.tipo==='parcelada'){
+          // Valor: se mudou, redistribui igualmente; senão mantém valores individuais
+          if(valorMudou){
+            const n=grupo.length;
+            const valorParc=Math.round(valor/n*100)/100;
+            grupo.forEach(t=>t.valor=valorParc);
+          }
+          // Data: se mudou, recalcula a sequência inteira a partir da nova data (parcela 1)
+          if(dataMudou){
+            grupo.sort((a,b)=>(a.numParcela||0)-(b.numParcela||0));
+            const mesP1=mesDeDataCartao(data,cartaoNovo);
+            const [y,m]=mesP1.split('-').map(Number);
+            grupo.forEach((t,i)=>{
+              const dt=new Date(y,m-1+i,1);
+              const mesId=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+              t.mes=mesId;
+              if(i===0)t.data=data;
+              if(!state.meses.includes(mesId))state.meses.push(mesId);
+            });
+          }
+        } else if(orig.tipo==='recorrente'){
+          if(valorMudou) grupo.forEach(t=>t.valor=valor);
+          if(dataMudou){
+            grupo.sort((a,b)=>a.data>b.data?1:-1);
+            const mesR1=mesDeDataCartao(data,cartaoNovo);
+            const [y,m]=mesR1.split('-').map(Number);
+            grupo.forEach((t,i)=>{
+              const dt=new Date(y,m-1+i,1);
+              const mesId=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+              t.mes=mesId;
+              if(i===0)t.data=data;
+              if(!state.meses.includes(mesId))state.meses.push(mesId);
+            });
+          }
         }
-        // Atualizar o mes se a data mudou
-        const novoMes=mesDeData(data);
-        if(t.mes!==novoMes){
-          if(!state.meses.includes(novoMes))state.meses.push(novoMes);
-          t.mes=novoMes;
+      } else {
+        // Altera só esta transação
+        orig.estab=estab;orig.valor=valor;orig.data=data;orig.obs=obs||undefined;orig.cartao=cartaoNovo;
+        Object.assign(orig,donoExtra);
+        // Se não faz parte de sequência (ou usuário escolheu só esta), recalcula mês pela data/fechamento
+        if(orig.tipo!=='parcelada'&&orig.tipo!=='recorrente'){
+          const novoMes=mesDeDataCartao(data,cartaoNovo);
+          if(orig.mes!==novoMes){
+            if(!state.meses.includes(novoMes))state.meses.push(novoMes);
+            orig.mes=novoMes;
+          }
         }
       }
+
       salvarDados();fecharModal('transacaoModal');renderMeses();renderDashboard();
       return;
     }
