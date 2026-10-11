@@ -120,6 +120,13 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .badge-rat{background:#FAF5FF;color:#8B5CF6}
 .del-btn{background:0;border:0;cursor:pointer;color:var(--text3);font-size:14px;padding:4px;border-radius:6px;transition:all .15s;line-height:1}
 .del-btn:hover{color:var(--red);background:#FEF2F2}
+#dropZone:hover{border-color:var(--text);color:var(--text)}
+#dropZone.dragover{border-color:var(--blue);background:#EFF6FF;color:var(--blue)}
+.import-row{display:grid;grid-template-columns:80px 1fr 90px 70px;gap:8px;padding:7px 10px;border-bottom:1px solid var(--border);font-size:11px;align-items:center}
+.import-row:last-child{border-bottom:0}
+.import-row.header{background:var(--surface2);font-weight:600;font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;border-radius:10px 10px 0 0}
+.import-row input[type=checkbox]{width:15px;height:15px;accent-color:var(--text);cursor:pointer}
+.import-badge{font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;display:inline-block}
 
 /* BOTÕES */
 .btn{padding:7px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text);font-family:inherit;transition:all .15s}
@@ -204,6 +211,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
         <div class="sb-section-title">Menu</div>
         <div class="nav-item" onclick="abrirNovaTransacao()">
           <span class="nav-icon">＋</span><span class="nav-label">Nova despesa</span>
+        </div>
+        <div class="nav-item" onclick="abrirImportarFatura()">
+          <span class="nav-icon">&#128196;</span><span class="nav-label">Importar Fatura</span>
         </div>
         <div class="nav-item" onclick="abrirPessoas()">
           <span class="nav-icon">👥</span><span class="nav-label">Pessoas</span>
@@ -349,6 +359,56 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     </div>
     <div class="modal-footer">
       <button class="btn btn-dark" onclick="fecharModal('pessoasModal')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR FATURA -->
+<div id="importarModal" class="modal">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-title">Importar Fatura PDF</div>
+
+    <!-- PASSO 1: Upload -->
+    <div id="importStep1">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px">
+        Selecione o PDF da fatura Bradesco AMEX. O sistema lê os lançamentos, identifica parcelamentos e distribui nos meses corretos.
+      </div>
+      <div class="field">
+        <label>Cartão de destino</label>
+        <select id="importCartao">
+          <option value="amex">AMEX</option>
+          <option value="inter">Inter</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Filtrar titular (opcional)</label>
+        <input type="text" id="importTitular" placeholder="Vazio = importa Marcello e Jhenipher">
+      </div>
+      <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:12px;padding:32px;cursor:pointer;gap:8px;color:var(--text2);font-size:13px;transition:border-color .15s" id="dropZone">
+        <span style="font-size:28px">&#128196;</span>
+        <span id="dropLabel">Clique ou arraste o PDF da fatura</span>
+        <input type="file" id="importFile" accept=".pdf,.html" style="display:none" onchange="importFileSelected(this)">
+      </label>
+      <div id="importPreview" style="margin-top:10px;font-size:11px;color:var(--text2)"></div>
+    </div>
+
+    <!-- PASSO 2: Processando -->
+    <div id="importStep2" style="display:none;text-align:center;padding:32px 0">
+      <div style="font-size:28px;margin-bottom:12px">&#129504;</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">Analisando fatura...</div>
+      <div id="importStatus" style="font-size:11px;color:var(--text2)">Lendo PDF com IA</div>
+    </div>
+
+    <!-- PASSO 3: Revisar -->
+    <div id="importStep3" style="display:none">
+      <div style="font-size:12px;font-weight:600;margin-bottom:8px">Lançamentos encontrados — revise antes de importar:</div>
+      <div id="importReview" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:10px"></div>
+      <div id="importSummary" style="margin-top:10px;font-size:12px;color:var(--text2)"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" onclick="fecharModal('importarModal')">Cancelar</button>
+      <button class="btn btn-dark" id="importBtn" onclick="importarFaturaExecutar()" style="display:none">Importar tudo</button>
     </div>
   </div>
 </div>
@@ -1085,6 +1145,233 @@ function salvarConfig(){
   salvarDados();fecharModal('configModal');renderMeses();renderDashboard();
 }
 function fecharModal(id){document.getElementById(id).classList.remove('active');}
+
+/* ── IMPORTAR FATURA ── */
+let importDados = []; // lançamentos extraídos pela IA
+
+function abrirImportarFatura(){
+  // Reset
+  importDados = [];
+  document.getElementById('importStep1').style.display = 'block';
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importStep3').style.display = 'none';
+  document.getElementById('importBtn').style.display = 'none';
+  document.getElementById('importFile').value = '';
+  document.getElementById('dropLabel').textContent = 'Clique ou arraste o PDF da fatura';
+  document.getElementById('importPreview').textContent = '';
+  document.getElementById('importarModal').classList.add('active');
+
+  // Drag & drop
+  const zone = document.getElementById('dropZone');
+  zone.ondragover = e => { e.preventDefault(); zone.classList.add('dragover'); };
+  zone.ondragleave = () => zone.classList.remove('dragover');
+  zone.ondrop = e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if(f) importFileSelected({files:[f]});
+  };
+  zone.onclick = () => document.getElementById('importFile').click();
+}
+
+function importFileSelected(input){
+  const file = input.files[0];
+  if(!file) return;
+  document.getElementById('dropLabel').textContent = file.name;
+  document.getElementById('importPreview').textContent = 'Arquivo: '+file.name+' ('+Math.round(file.size/1024)+' KB)';
+  processarFatura(file);
+}
+
+async function processarFatura(file){
+  document.getElementById('importStep1').style.display = 'none';
+  document.getElementById('importStep2').style.display = 'block';
+  document.getElementById('importStatus').textContent = 'Convertendo PDF...';
+
+  try {
+    // Ler arquivo como base64
+    const base64 = await new Promise((res,rej)=>{
+      const r = new FileReader();
+      r.onload = ()=> res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+
+    document.getElementById('importStatus').textContent = 'Enviando para análise com IA...';
+
+    const titularesFiltro = 'MARCELLO,JHENIPHER';
+    const prompt = `Você é um extrator de dados de faturas de cartão de crédito (Bradesco AMEX ou Inter).
+Analise o PDF e extraia os lançamentos seguindo estas regras:
+
+INCLUIR:
+- Todos os lançamentos de compra/débito, independente do estabelecimento
+- Parcelamentos identificados por padrões como "NOME XX/YY" (AMEX) ou "(Parcela XX de YY)" (Inter)
+- Lançamentos em moeda estrangeira (converter para R$ usando o valor R$ da coluna R$)
+
+EXCLUIR (não incluir no JSON):
+- Pagamentos de fatura (PAG BOLETO, PAGTO DEBITO AUTOMATICO, créditos com valor positivo/+)
+- IOF, encargos, juros, multas, anuidades
+- Linhas de total, resumo ou cabeçalho
+
+FORMATO Inter: data "25 de mai. 2026", parcelamento "(Parcela 05 de 12)" no campo Movimentação
+FORMATO AMEX: data "DD/MM/AAAA", parcelamento "NOME 11/12" no Histórico, titular na seção "MARCELLO..." ou "BEATRIZ..."
+
+Para cada lançamento retorne um objeto JSON:
+{
+  "data": "DD/MM/AAAA",
+  "historico": "nome limpo sem código de parcela",
+  "valor": 99.99,
+  "parcela_atual": 5,
+  "total_parcelas": 12,
+  "titular": "MARCELLO"
+}
+- parcela_atual e total_parcelas: null se não for parcelado
+- titular: nome do titular da seção/cartão. Se não houver distinção de titular, use "MARCELLO"
+- Converta datas do formato "25 de mai. 2026" para "25/05/2026"
+- Meses em pt-BR: jan=01 fev=02 mar=03 abr=04 mai=05 jun=06 jul=07 ago=08 set=09 out=10 nov=11 dez=12
+
+Retorne SOMENTE o JSON array, sem texto adicional, sem markdown, sem explicações.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    const json = await resp.json();
+    if(json.error) throw new Error(json.error.message);
+
+    document.getElementById('importStatus').textContent = 'Processando resultado...';
+
+    const texto = json.content.map(c=>c.text||'').join('');
+    const clean = texto.replace(/```json|```/g,'').trim();
+    importDados = JSON.parse(clean);
+
+    // Filtrar: manter apenas MARCELLO e JHENIPHER (ignorar BEATRIZ e outros)
+    const titularesPermitidos = ['MARCELLO','JHENIPHER'];
+    const filtroExtra = document.getElementById('importTitular').value.trim().toUpperCase();
+    importDados = importDados.filter(d=>{
+      const tit = (d.titular||'').toUpperCase();
+      // Se há filtro manual, usa ele; senão usa a lista padrão
+      if(filtroExtra) return tit.includes(filtroExtra);
+      return titularesPermitidos.some(p=>tit.includes(p));
+    });
+
+    renderizarRevisao();
+
+  } catch(e) {
+    document.getElementById('importStep2').style.display = 'none';
+    document.getElementById('importStep1').style.display = 'block';
+    document.getElementById('importPreview').innerHTML = '<span style="color:var(--red)">Erro: '+e.message+'</span>';
+    console.error(e);
+  }
+}
+
+function renderizarRevisao(){
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importStep3').style.display = 'block';
+  document.getElementById('importBtn').style.display = 'inline-flex';
+
+  const cartao = document.getElementById('importCartao').value;
+  const fechamento = state.cartao === cartao
+    ? getFechamento(mesVigente())
+    : (cartao==='inter'?state.config.inter:state.config.amex);
+
+  let html = '<div class="import-row header"><span></span><span>ESTABELECIMENTO</span><span style="text-align:right">VALOR</span><span>TIPO</span></div>';
+  let total = 0;
+  let countParc = 0;
+
+  importDados.forEach((d,i)=>{
+    const isParc = d.total_parcelas && d.total_parcelas > 1;
+    const tipo = isParc ? d.parcela_atual+'/'+d.total_parcelas : 'normal';
+    const badge = isParc
+      ? '<span class="import-badge" style="background:#EFF6FF;color:var(--blue)">'+tipo+'</span>'
+      : '<span class="import-badge" style="background:var(--surface2);color:var(--text2)">normal</span>';
+    total += d.valor;
+    if(isParc) countParc++;
+    html += '<div class="import-row">'
+      +'<span style="color:var(--text2)">'+d.data+'</span>'
+      +'<label style="cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" checked data-idx="'+i+'"> '+d.historico+'</label>'
+      +'<span style="text-align:right;font-weight:600">'+fmt(d.valor)+'</span>'
+      +badge
+      +'</div>';
+  });
+
+  document.getElementById('importReview').innerHTML = html;
+  document.getElementById('importSummary').innerHTML =
+    '<b>'+importDados.length+' lançamentos</b> · '+countParc+' parcelados · Total '+fmt(total)
+    +'<span style="float:right;color:var(--text3)">Desmarque o que não quer importar</span>';
+}
+
+function importarFaturaExecutar(){
+  const cartao = document.getElementById('importCartao').value;
+  const checks = document.querySelectorAll('#importReview input[type=checkbox]');
+  let importados = 0;
+
+  // Agrupar parcelados por histórico+total para criar grupoId compartilhado
+  const grupos = {};
+  importDados.forEach((d,i)=>{
+    if(!checks[i] || !checks[i].checked) return;
+    if(d.total_parcelas && d.total_parcelas > 1){
+      const key = d.historico+'|'+d.total_parcelas;
+      if(!grupos[key]) grupos[key] = uid();
+    }
+  });
+
+  importDados.forEach((d,i)=>{
+    if(!checks[i] || !checks[i].checked) return;
+    const [dd,mm,aaaa] = d.data.split('/');
+    const dataISO = aaaa+'-'+mm+'-'+dd;
+    const isParc = d.total_parcelas && d.total_parcelas > 1;
+
+    let mes, tipo, extra = {};
+
+    if(isParc){
+      // Calcular mês desta parcela: parcela 1 respeita fechamento, demais avançam
+      const mesParcela1 = mesDeDataCartao(dataISO, cartao);
+      const [y,m] = mesParcela1.split('-').map(Number);
+      // Offset = parcela_atual - 1
+      const offset = (d.parcela_atual || 1) - 1;
+      const dt = new Date(y, m-1+offset, 1);
+      mes = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
+      tipo = 'parcelada';
+      const key = d.historico+'|'+d.total_parcelas;
+      extra = { numParcela: d.parcela_atual||1, totalParcelas: d.total_parcelas, grupoId: grupos[key] };
+    } else {
+      mes = mesDeDataCartao(dataISO, cartao);
+      tipo = 'normal';
+    }
+
+    const t = {
+      id: uid(),
+      mes, cartao,
+      estab: d.historico,
+      valor: d.valor,
+      data: dataISO,
+      tipo,
+      percentMeu: 100,
+      ...extra
+    };
+
+    push(t);
+    importados++;
+  });
+
+  salvarDados();
+  fecharModal('importarModal');
+  renderMeses();
+  renderDashboard();
+  alert(importados+' lançamentos importados com sucesso!');
+}
 
 /* ── FATURA PDF ── */
 function gerarFatura(cartao){
