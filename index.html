@@ -215,6 +215,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
         <div class="nav-item" onclick="abrirImportarFatura()">
           <span class="nav-icon">&#128196;</span><span class="nav-label">Importar Fatura</span>
         </div>
+        <div class="nav-item" onclick="completarParcelasFuturas()">
+          <span class="nav-icon">&#10140;</span><span class="nav-label">Completar parcelas</span>
+        </div>
         <div class="nav-item" onclick="abrirPessoas()">
           <span class="nav-icon">👥</span><span class="nav-label">Pessoas</span>
         </div>
@@ -509,7 +512,7 @@ function corrigirMesesExistentes(){
     const mesParcela1=mesDeDataCartao(p1.data,p1.cartao);
     const [y,m]=mesParcela1.split('-').map(Number);
     parcelas.forEach((p,i)=>{
-      const dt=new Date(y,m-1+i,1);
+      const dt=new Date(y,m-1+(p.numParcela?p.numParcela-1:i),1);
       const mesId=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
       if(p.mes!==mesId){
         p.mes=mesId;
@@ -1221,17 +1224,9 @@ function renderizarRevisao(){
 function importarFaturaExecutar(){
   const cartao = document.getElementById('importCartao').value;
   const checks = document.querySelectorAll('#importReview input[type=checkbox]');
-  let importados = 0;
-
-  // Agrupar parcelados por histórico+total para criar grupoId compartilhado
+  const antes = state.transacoes.slice();   // o que já existia antes desta importação
+  let importados = 0, futuras = 0, jaExistiam = 0;
   const grupos = {};
-  importDados.forEach((d,i)=>{
-    if(!checks[i] || !checks[i].checked) return;
-    if(d.total_parcelas && d.total_parcelas > 1){
-      const key = d.historico+'|'+d.total_parcelas;
-      if(!grupos[key]) grupos[key] = uid();
-    }
-  });
 
   importDados.forEach((d,i)=>{
     if(!checks[i] || !checks[i].checked) return;
@@ -1239,44 +1234,72 @@ function importarFaturaExecutar(){
     const dataISO = aaaa+'-'+mm+'-'+dd;
     const isParc = d.total_parcelas && d.total_parcelas > 1;
 
-    let mes, tipo, extra = {};
-
-    if(isParc){
-      // Calcular mês desta parcela: parcela 1 respeita fechamento, demais avançam
-      const mesParcela1 = mesDeDataCartao(dataISO, cartao);
-      const [y,m] = mesParcela1.split('-').map(Number);
-      // Offset = parcela_atual - 1
-      const offset = (d.parcela_atual || 1) - 1;
-      const dt = new Date(y, m-1+offset, 1);
-      mes = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
-      tipo = 'parcelada';
-      const key = d.historico+'|'+d.total_parcelas;
-      extra = { numParcela: d.parcela_atual||1, totalParcelas: d.total_parcelas, grupoId: grupos[key] };
-    } else {
-      mes = mesDeDataCartao(dataISO, cartao);
-      tipo = 'normal';
+    if(!isParc){
+      // não duplica compra normal já lançada (mesma data, estabelecimento e valor)
+      const k = antes.findIndex(t=>(!t.tipo||t.tipo==='normal')&&t.cartao===cartao&&t.data===dataISO&&t.estab===d.historico&&t.valor===d.valor);
+      if(k>=0){ antes.splice(k,1); jaExistiam++; return; }
+      push({ id:uid(), mes:mesDeDataCartao(dataISO,cartao), cartao, estab:d.historico, valor:d.valor, data:dataISO, tipo:'normal', percentMeu:100 });
+      importados++;
+      return;
     }
 
-    const t = {
-      id: uid(),
-      mes, cartao,
-      estab: d.historico,
-      valor: d.valor,
-      data: dataISO,
-      tipo,
-      percentMeu: 100,
-      ...extra
-    };
+    const total = d.total_parcelas, atual = d.parcela_atual || 1;
+    const key = cartao+'|'+d.historico+'|'+total;
+    if(!grupos[key]){
+      // reaproveita o grupo de uma importação anterior, para não criar sequência duplicada
+      const existente = antes.find(t=>t.tipo==='parcelada'&&t.cartao===cartao&&t.estab===d.historico&&t.totalParcelas===total&&t.grupoId);
+      grupos[key] = existente ? existente.grupoId : uid();
+    }
+    const [y,m] = mesDeDataCartao(dataISO,cartao).split('-').map(Number);
 
-    push(t);
-    importados++;
+    // lança a parcela da fatura e todas as seguintes, uma em cada mês
+    for(let n=atual; n<=total; n++){
+      const jaTem = antes.some(t=>t.tipo==='parcelada'&&t.cartao===cartao&&t.estab===d.historico&&t.totalParcelas===total&&t.numParcela===n);
+      if(jaTem){ jaExistiam++; continue; }
+      const dt = new Date(y, m-1+(n-1), 1);
+      push({ id:uid(), mes:dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'), cartao,
+             estab:d.historico, valor:d.valor, data:dataISO, tipo:'parcelada',
+             numParcela:n, totalParcelas:total, grupoId:grupos[key], percentMeu:100 });
+      if(n===atual) importados++; else futuras++;
+    }
   });
 
   salvarDados();
   fecharModal('importarModal');
   renderMeses();
   renderDashboard();
-  alert(importados+' lançamentos importados com sucesso!');
+  alert(importados+' lançamentos importados'
+    +(futuras?', '+futuras+' parcelas futuras lançadas nos meses seguintes':'')
+    +(jaExistiam?' ('+jaExistiam+' já existiam e foram ignorados)':'')+'.');
+}
+
+// Lança, nos meses seguintes, as parcelas que faltam das compras parceladas já existentes
+function completarParcelasFuturas(){
+  const grupos = {};
+  state.transacoes.filter(t=>t.tipo==='parcelada'&&t.grupoId&&t.numParcela&&t.totalParcelas).forEach(t=>{
+    (grupos[t.grupoId] = grupos[t.grupoId] || []).push(t);
+  });
+  const novas = [];
+  Object.values(grupos).forEach(itens=>{
+    itens.sort((a,b)=>a.numParcela-b.numParcela);
+    const ref = itens[itens.length-1];
+    const tem = new Set(itens.map(x=>x.numParcela));
+    const [y,m] = ref.mes.split('-').map(Number);
+    for(let n=ref.numParcela+1; n<=ref.totalParcelas; n++){
+      if(tem.has(n)) continue;
+      const dt = new Date(y, m-1+(n-ref.numParcela), 1);
+      const copia = Object.assign({}, ref, {
+        id: uid(), numParcela: n,
+        mes: dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')
+      });
+      novas.push(copia);
+    }
+  });
+  if(!novas.length){ alert('Todas as parcelas já estão lançadas.'); return; }
+  if(!confirm(novas.length+' parcelas futuras serão lançadas nos meses seguintes. Continuar?')) return;
+  novas.forEach(t=>push(t));
+  salvarDados();renderMeses();renderDashboard();
+  alert(novas.length+' parcelas lançadas.');
 }
 
 /* ── FATURA PDF ── */
