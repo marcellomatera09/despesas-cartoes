@@ -1,5 +1,5 @@
 /* Importação de faturas em PDF (Bradesco/Amex e Inter) — roda 100% no navegador, sem IA e sem API paga.
-   Uso:  const r = await processarFatura(file);   // file = <input type="file"> .files[0]
+   Uso:  const r = await lerFaturaPdf(file);   // file = <input type="file"> .files[0]
    Retorna { banco, vencimento, totalFatura, somaLida, conferido, lancamentos[], ignorados[] } */
 
 const PDFJS_VERSION = '3.11.174';
@@ -198,7 +198,7 @@ function interpretarFatura(linhas) {
   throw new Error('Formato de fatura não reconhecido (suportados: Bradesco/Amex e Inter)');
 }
 
-async function processarFatura(file) {
+async function lerFaturaPdf(file) {
   if (!file || (file.type && file.type !== 'application/pdf')) throw new Error('Selecione um arquivo PDF');
   await garantirPdfJs();
   const buf = await file.arrayBuffer();
