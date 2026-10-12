@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Despesas</title>
+<script>document.documentElement.dataset.theme=localStorage.getItem("tema")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light")</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -165,6 +166,31 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .pessoa-tag button{background:0;border:0;color:var(--text2);cursor:pointer;font-size:13px;line-height:1;padding:0}
 .pessoa-tag button:hover{color:var(--red)}
 
+/* ── VISUAL MODERNO + TEMAS ── */
+:root{--bg:#F5F6F8;--border:#E8EAEE;--border2:#EEF0F3;--shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.04);--shadow-md:0 8px 24px rgba(16,24,40,.10)}
+[data-theme=dark]{color-scheme:dark;--bg:#0B0C0F;--surface:#15171C;--surface2:#1B1E24;--border:#262A31;--border2:#2B2F37;--text:#ECEDEF;--text2:#9AA0AA;--text3:#6B7280;--sidebar:#0F1115;--shadow:0 1px 2px rgba(0,0,0,.5);--shadow-md:0 10px 28px rgba(0,0,0,.5)}
+[data-theme=dark] .badge-parc,[data-theme=dark] .tipo-pill.active-parcelada,[data-theme=dark] #dropZone.dragover{background:rgba(59,130,246,.16)}
+[data-theme=dark] .badge-rec,[data-theme=dark] .tipo-pill.active-recorrente{background:rgba(16,185,129,.16)}
+[data-theme=dark] .badge-rat,[data-theme=dark] .tipo-pill.active-rateada{background:rgba(139,92,246,.18)}
+[data-theme=dark] .badge-ter,[data-theme=dark] .tipo-pill.active-terceiro{background:rgba(245,158,11,.16)}
+[data-theme=dark] .del-btn:hover{background:rgba(239,68,68,.15)}
+.card,.grupo{border-radius:16px}
+.content{padding:20px 24px}
+.topbar{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--surface) 85%,transparent);backdrop-filter:saturate(1.5) blur(12px)}
+.cartao-card{border-radius:14px;transition:transform .15s,box-shadow .15s}
+.cartao-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.cartao-total{font-size:22px}
+.btn{border-radius:10px}
+.grupo-header{padding:14px 18px}
+.tabela th{background:transparent}
+.nav-item{margin:1px 8px;padding:8px 10px;border-left:0;border-radius:8px}
+.nav-item.active{border-left:0;background:rgba(255,255,255,.10)}
+.import-row{grid-template-columns:80px 1fr 90px 64px 120px}
+.cat-sel,.ana-filtros select{padding:5px 8px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:11px;font-family:inherit}
+.ana-filtros{display:flex;gap:8px;align-items:center}
+.ana-filtros select{font-size:12px;padding:7px 10px;border-radius:10px}
+.ana-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:12px}
+@media(max-width:900px){.ana-grid{grid-template-columns:1fr}}
 @media(max-width:768px){
   .sidebar{width:56px}
   .sb-logo p,.nav-label,.sb-section-title,.user-name,.user-hint,.nav-actions{display:none}
@@ -209,6 +235,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
       <div class="sb-section">
         <div class="sb-section-title">Menu</div>
+        <div class="nav-item" onclick="abrirAnalises()">
+          <span class="nav-icon">&#128202;</span><span class="nav-label">Análises</span>
+        </div>
         <div class="nav-item" onclick="abrirNovaTransacao()">
           <span class="nav-icon">＋</span><span class="nav-label">Nova despesa</span>
         </div>
@@ -235,7 +264,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   <div class="main">
     <div class="topbar">
       <h1 id="headerTitle">Dashboard</h1>
-      <div id="relogio" class="clock"></div>
+      <div style="display:flex;align-items:center;gap:14px"><button class="btn btn-sm" id="btnTema" onclick="alternarTema()">☾ Escuro</button><div id="relogio" class="clock"></div></div>
     </div>
     <div class="content" id="mainContent"></div>
   </div>
@@ -270,7 +299,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
     <!-- CAMPOS PRINCIPAIS -->
     <div class="row2">
-      <div class="field"><label>Estabelecimento</label><input type="text" id="transEstab"></div>
+      <div class="field"><label>Estabelecimento</label><input type="text" id="transEstab" oninput="sugerirCategoria()"></div>
       <div class="field"><label>Valor Total (R$)</label><input type="number" id="transValor" step="0.01" oninput="onValorInput()"></div>
     </div>
     <div class="row2">
@@ -283,6 +312,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
     </div>
     <div class="field"><label>Observação</label><input type="text" id="transObs" placeholder="Opcional..."></div>
+    <div class="field"><label>Categoria (opcional)</label><select id="transCategoria"></select></div>
 
     <!-- DIMENSÃO 1: TIPO DE REPETIÇÃO -->
     <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px">Frequência</div>
@@ -368,7 +398,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 
 <!-- MODAL IMPORTAR FATURA -->
 <div id="importarModal" class="modal">
-  <div class="modal-box" style="max-width:560px">
+  <div class="modal-box" style="max-width:720px">
     <div class="modal-title">Importar Fatura PDF</div>
 
     <!-- PASSO 1: Upload -->
@@ -385,7 +415,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       </div>
       <div class="field">
         <label>Filtrar titular (opcional)</label>
-        <input type="text" id="importTitular" placeholder="Vazio = importa Marcello e Jhenipher">
+        <input type="text" id="importTitular" placeholder="Vazio = usa os titulares definidos em Config">
       </div>
       <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed var(--border);border-radius:12px;padding:32px;cursor:pointer;gap:8px;color:var(--text2);font-size:13px;transition:border-color .15s" id="dropZone">
         <span style="font-size:28px">&#128196;</span>
@@ -422,6 +452,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
     <div class="modal-title">Configurações</div>
     <div class="field"><label>Fechamento Inter (dia)</label><input type="number" id="dataInter" min="1" max="31"></div>
     <div class="field"><label>Fechamento AMEX (dia)</label><input type="number" id="dataAmex" min="1" max="31"></div>
+    <div class="field"><label>Titulares a importar (separe por vírgula)</label><input type="text" id="cfgTitulares" placeholder="Vazio = importa todos"></div>
     <div class="modal-footer">
       <button class="btn" onclick="fecharModal('configModal')">Cancelar</button>
       <button class="btn btn-dark" onclick="salvarConfig()">Salvar</button>
@@ -641,7 +672,7 @@ function renderMesItem(id){
   </div>`;
 }
 function toggleAnteriores(){mostrarAnteriores=!mostrarAnteriores;renderMeses();}
-function selecionarMes(id){state.mes=id;renderMeses();renderDashboard();}
+function selecionarMes(id){state.mes=id;state.view='dash';renderMeses();renderDashboard();}
 function removerMes(id,e){
   e.stopPropagation();
   if(state.transacoes.some(t=>t.mes===id)){alert('Mês com transações não pode ser removido.');return}
@@ -688,6 +719,7 @@ function fmt(v){return'R$ '+(+v||0).toFixed(2).replace('.',',').replace(/\B(?=(\
 /* ── DASHBOARD ── */
 function renderDashboard(){
   try{
+  if(state.view==='analises'){renderAnalises();return;}
   if(!state.mes) state.mes=mesVigente();
   const mesLabel=new Date(state.mes+'-15').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const fech=getFechamento(state.mes);
@@ -743,10 +775,10 @@ function renderDashboard(){
       <div class="cartao-grid">${cartoesHtml}</div>
       ${resumoBar}
     </div>
-    ${grupoHtml('Rateadas','var(--rateada)','#FAF5FF',rateadas)}
-    ${grupoHtml('Parceladas','var(--parcelada)','#EFF6FF',parceladas)}
-    ${grupoHtml('Recorrentes','var(--recorrente)','#F0FDF4',recorrentes)}
-    ${grupoHtml('DeTerceiros','var(--terceiro)','#FFFBEB',terceiros)}
+    ${grupoHtml('Rateadas','var(--rateada)','rgba(139,92,246,.12)',rateadas)}
+    ${grupoHtml('Parceladas','var(--parcelada)','rgba(59,130,246,.12)',parceladas)}
+    ${grupoHtml('Recorrentes','var(--recorrente)','rgba(16,185,129,.12)',recorrentes)}
+    ${grupoHtml('DeTerceiros','var(--terceiro)','rgba(245,158,11,.14)',terceiros)}
     ${grupoHtml('Normais','var(--normal)','var(--surface2)',normais)}
   `;
   document.getElementById('headerTitle').textContent=mesLabel.charAt(0).toUpperCase()+mesLabel.slice(1);
@@ -851,6 +883,7 @@ function editarTransacao(id){
   document.getElementById('transEstab').value=t.estab||'';
   document.getElementById('transValor').value=t.valor||'';
   document.getElementById('transObs').value=t.obs||'';
+  document.getElementById('transCategoria').value=t.cat||'';
   document.getElementById('transCartao').value=t.cartao||state.cartao;
   document.getElementById('transData').value=t.data||'';
   document.getElementById('transPercentOutro').value=t.percentOutro||50;
@@ -902,6 +935,7 @@ function abrirNovaTransacao(){
   document.getElementById('transEstab').value='';
   document.getElementById('transValor').value='';
   document.getElementById('transObs').value='';
+  document.getElementById('transCategoria').value='';
   document.getElementById('transDivide').value='';
   document.getElementById('transPercentOutro').value=50;
   document.getElementById('transParcelas').value=2;
@@ -963,7 +997,8 @@ function salvarTransacao(){
     if(!estab||!valor||!data){alert('Preencha estabelecimento, valor e data');return}
 
     const parsearData=s=>{const[y,m,dia]=s.split('-').map(Number);return new Date(y,m-1,dia);};
-    const baseT={estab,data,cartao,obs:obs||undefined};
+    const cat=document.getElementById('transCategoria').value;
+    const baseT={estab,data,cartao,obs:obs||undefined,cat:cat||undefined};
 
     // Modo edição
     if(editandoId){
@@ -1003,7 +1038,7 @@ function salvarTransacao(){
       if(aplicarATodos){
         // Aplica estab/obs/cartao/dono a todos
         grupo.forEach(t=>{
-          t.estab=estab;t.obs=obs||undefined;t.cartao=cartaoNovo;
+          t.estab=estab;t.obs=obs||undefined;t.cartao=cartaoNovo;t.cat=cat||undefined;
           Object.assign(t,donoExtra);
         });
         if(orig.tipo==='parcelada'){
@@ -1043,7 +1078,7 @@ function salvarTransacao(){
         }
       } else {
         // Altera só esta transação
-        orig.estab=estab;orig.valor=valor;orig.data=data;orig.obs=obs||undefined;orig.cartao=cartaoNovo;
+        orig.estab=estab;orig.valor=valor;orig.data=data;orig.obs=obs||undefined;orig.cartao=cartaoNovo;orig.cat=cat||undefined;
         Object.assign(orig,donoExtra);
         // Se não faz parte de sequência (ou usuário escolheu só esta), recalcula mês pela data/fechamento
         if(orig.tipo!=='parcelada'&&orig.tipo!=='recorrente'){
@@ -1140,11 +1175,13 @@ function removerPessoa(p){state.pessoas=state.pessoas.filter(x=>x!==p);renderPes
 function abrirConfig(){
   document.getElementById('dataInter').value=state.config.inter;
   document.getElementById('dataAmex').value=state.config.amex;
+  document.getElementById('cfgTitulares').value=state.config.titulares==null?'MARCELLO,JHENIPHER':state.config.titulares;
   document.getElementById('configModal').classList.add('active');
 }
 function salvarConfig(){
   state.config.inter=parseInt(document.getElementById('dataInter').value);
   state.config.amex=parseInt(document.getElementById('dataAmex').value);
+  state.config.titulares=document.getElementById('cfgTitulares').value.trim();
   salvarDados();fecharModal('configModal');renderMeses();renderDashboard();
 }
 function fecharModal(id){document.getElementById(id).classList.remove('active');}
@@ -1195,7 +1232,7 @@ function renderizarRevisao(){
     ? getFechamento(mesVigente())
     : (cartao==='inter'?state.config.inter:state.config.amex);
 
-  let html = '<div class="import-row header"><span></span><span>ESTABELECIMENTO</span><span style="text-align:right">VALOR</span><span>TIPO</span></div>';
+  let html = '<div class="import-row header"><span></span><span>ESTABELECIMENTO</span><span style="text-align:right">VALOR</span><span>TIPO</span><span>CATEGORIA</span></div>';
   let total = 0;
   let countParc = 0;
 
@@ -1212,6 +1249,7 @@ function renderizarRevisao(){
       +'<label style="cursor:pointer;display:flex;align-items:center;gap:6px"><input type="checkbox" checked data-idx="'+i+'"> '+d.historico+'</label>'
       +'<span style="text-align:right;font-weight:600">'+fmt(d.valor)+'</span>'
       +badge
+      +'<select class="cat-sel" data-cat="'+i+'">'+optsCat(d.cat||'')+'</select>'
       +'</div>';
   });
 
@@ -1233,12 +1271,13 @@ function importarFaturaExecutar(){
     const [dd,mm,aaaa] = d.data.split('/');
     const dataISO = aaaa+'-'+mm+'-'+dd;
     const isParc = d.total_parcelas && d.total_parcelas > 1;
+    const cat = (document.querySelector('#importReview select[data-cat="'+i+'"]')||{}).value||undefined;
 
     if(!isParc){
       // não duplica compra normal já lançada (mesma data, estabelecimento e valor)
       const k = antes.findIndex(t=>(!t.tipo||t.tipo==='normal')&&t.cartao===cartao&&t.data===dataISO&&t.estab===d.historico&&t.valor===d.valor);
       if(k>=0){ antes.splice(k,1); jaExistiam++; return; }
-      push({ id:uid(), mes:mesDeDataCartao(dataISO,cartao), cartao, estab:d.historico, valor:d.valor, data:dataISO, tipo:'normal', percentMeu:100 });
+      push({ id:uid(), mes:mesDeDataCartao(dataISO,cartao), cartao, estab:d.historico, valor:d.valor, data:dataISO, tipo:'normal', percentMeu:100, cat });
       importados++;
       return;
     }
@@ -1259,7 +1298,7 @@ function importarFaturaExecutar(){
       const dt = new Date(y, m-1+(n-1), 1);
       push({ id:uid(), mes:dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'), cartao,
              estab:d.historico, valor:d.valor, data:dataISO, tipo:'parcelada',
-             numParcela:n, totalParcelas:total, grupoId:grupos[key], percentMeu:100 });
+             numParcela:n, totalParcelas:total, grupoId:grupos[key], percentMeu:100, cat });
       if(n===atual) importados++; else futuras++;
     }
   });
@@ -1465,6 +1504,92 @@ function _pdf(mes,mesLabel){
   doc.save('relatorio_'+mes+'.pdf');
 }
 
+/* ── CATEGORIAS ── */
+const CATEGORIAS=[
+ {id:'alimentacao',nome:'Alimentação',cor:'#F59E0B',re:/ifood|ifd\*|restaurante|pizzaria|padaria|cafe|hortifruti|mambo|supermerc|boteco|burger|pecorino|confeit|gastronom|lanche/i},
+ {id:'transporte',nome:'Transporte',cor:'#3B82F6',re:/uber|99app|posto de|combust|estacionamento|dollar rac|localiza/i},
+ {id:'viagem',nome:'Viagem',cor:'#06B6D4',re:/airbnb|gol linhas|latam|booking|hotel|hoteis|visto|decolar|jim\.com/i},
+ {id:'saude',nome:'Saúde',cor:'#EF4444',re:/farm|drog|panvel|raia|pacheco|saude|wellhub|gympass/i},
+ {id:'compras',nome:'Compras',cor:'#8B5CF6',re:/amazon|mercadolivre|mercado livre|magalu|magazine|sephora|jbl|shopee|aliexpress/i},
+ {id:'assinaturas',nome:'Assinaturas',cor:'#10B981',re:/apple\.com|netflix|spotify|hotmart|youtube|globo|estadao|assinatura|seguro|seg resid|sympla/i},
+ {id:'casa',nome:'Casa',cor:'#F97316',re:/lighting|leroy|telhanorte|condominio|energia/i},
+ {id:'educacao',nome:'Educação',cor:'#EC4899',re:/faculdade|curso|escola|editora|udemy|alura/i}
+];
+function categorizar(estab){const c=CATEGORIAS.find(c=>c.re.test(estab||''));return c?c.id:'';}
+function optsCat(sel){return '<option value="">Sem categoria</option>'+CATEGORIAS.map(c=>'<option value="'+c.id+'"'+(c.id===sel?' selected':'')+'>'+c.nome+'</option>').join('');}
+function sugerirCategoria(){const el=document.getElementById('transCategoria');if(!el.value)el.value=categorizar(document.getElementById('transEstab').value);}
+function sugerirCategoriasLote(){
+  const alvo=state.transacoes.filter(t=>!t.cat&&categorizar(t.estab));
+  if(!alvo.length){alert('Nenhuma despesa sem categoria pôde ser classificada automaticamente.');return;}
+  if(!confirm('Classificar automaticamente '+alvo.length+' despesas pelo nome do estabelecimento? Você pode corrigir depois, uma a uma.'))return;
+  alvo.forEach(t=>{t.cat=categorizar(t.estab);});
+  salvarDados();renderAnalises();
+}
+
+/* ── TEMA ── */
+function aplicarTema(t){document.documentElement.dataset.theme=t;localStorage.setItem('tema',t);const b=document.getElementById('btnTema');if(b)b.textContent=t==='dark'?'☀ Claro':'☾ Escuro';}
+function alternarTema(){aplicarTema(document.documentElement.dataset.theme==='dark'?'light':'dark');if(state.view==='analises')renderAnalises();}
+
+/* ── ANÁLISES ── */
+const anaFiltro={cartao:'todos',ano:null,minhas:false};
+let _charts=[];
+function anaSet(k,v){anaFiltro[k]=v;renderAnalises();}
+function abrirAnalises(){state.view='analises';renderDashboard();}
+function anaValor(t){return anaFiltro.minhas?t.valor*(t.terceiro?0:(t.percentMeu==null?100:t.percentMeu)/100):t.valor;}
+function carregarChartJs(){return new Promise((res,rej)=>{if(window.Chart)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';s.onload=res;s.onerror=()=>rej(new Error('Não foi possível carregar os gráficos'));document.head.appendChild(s);});}
+function renderAnalises(){
+  document.getElementById('headerTitle').textContent='Análises';
+  const anos=[...new Set(state.transacoes.map(t=>(t.mes||'').slice(0,4)).filter(Boolean))].sort();
+  const hoje=String(new Date().getFullYear());
+  if(!anaFiltro.ano||!anos.includes(anaFiltro.ano))anaFiltro.ano=anos.includes(hoje)?hoje:(anos[anos.length-1]||hoje);
+  const sem=state.transacoes.filter(t=>!t.cat).length;
+  const sel=v=>anaFiltro.cartao===v?' selected':'';
+  document.getElementById('mainContent').innerHTML=`
+  <div class="card"><div class="card-header"><div>
+    <div style="font-size:14px;font-weight:700">Para onde vai o dinheiro</div>
+    <div style="font-size:11px;color:var(--text2);margin-top:2px">Inclui parcelas e recorrências já lançadas nos meses futuros</div></div>
+    <div class="ana-filtros">
+      <select onchange="anaSet('cartao',this.value)"><option value="todos">Todos os cartões</option><option value="inter"${sel('inter')}>Inter</option><option value="amex"${sel('amex')}>AMEX</option></select>
+      <select onchange="anaSet('ano',this.value)">${anos.length?anos.map(a=>'<option'+(a===anaFiltro.ano?' selected':'')+'>'+a+'</option>').join(''):'<option>'+hoje+'</option>'}</select>
+      <label class="check-row" style="margin:0"><input type="checkbox" ${anaFiltro.minhas?'checked':''} onchange="anaSet('minhas',this.checked)"><span style="font-size:12px">Só minhas</span></label>
+    </div></div>
+    ${sem?`<div class="info-pill">${sem} despesas sem categoria. <a href="#" onclick="sugerirCategoriasLote();return false" style="color:var(--blue);font-weight:600">Sugerir categorias automaticamente</a></div>`:''}
+    <div class="card-title" style="margin-bottom:8px">Mês a mês — ${anaFiltro.ano}</div>
+    <div style="height:300px"><canvas id="chMeses"></canvas></div></div>
+  <div class="ana-grid">
+    <div class="card"><div class="card-title" style="margin-bottom:8px">Total por ano</div><div style="height:260px"><canvas id="chAnos"></canvas></div></div>
+    <div class="card"><div class="card-title" style="margin-bottom:8px">Categorias em ${anaFiltro.ano}</div><div style="height:260px"><canvas id="chCats"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-title" style="margin-bottom:8px">Onde mais se gasta em ${anaFiltro.ano} (top 10)</div><div style="height:340px"><canvas id="chTop"></canvas></div></div>`;
+  carregarChartJs().then(desenharAnalises).catch(e=>{document.getElementById('mainContent').insertAdjacentHTML('afterbegin','<div class="info-pill" style="color:var(--red)">'+e.message+'</div>');});
+}
+function desenharAnalises(){
+  _charts.forEach(c=>c.destroy());_charts=[];
+  const cs=getComputedStyle(document.documentElement);
+  Chart.defaults.color=cs.getPropertyValue('--text2').trim();Chart.defaults.borderColor=cs.getPropertyValue('--border').trim();Chart.defaults.font.family="'Inter',system-ui,sans-serif";
+  const ano=anaFiltro.ano;
+  const todas=state.transacoes.filter(t=>t.mes&&(anaFiltro.cartao==='todos'||t.cartao===anaFiltro.cartao));
+  const doAno=todas.filter(t=>t.mes.startsWith(ano));
+  const cats=[...CATEGORIAS,{id:'',nome:'Sem categoria',cor:'#9CA3AF'}];
+  const fm=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
+  const soma=a=>a.reduce((s,t)=>s+anaValor(t),0);
+  const base={responsive:true,maintainAspectRatio:false};
+  const mk=(id,cfg)=>_charts.push(new Chart(document.getElementById(id),cfg));
+  const meses=Array.from({length:12},(_,i)=>ano+'-'+String(i+1).padStart(2,'0'));
+  mk('chMeses',{type:'bar',data:{labels:mesesNomes,datasets:cats.map(c=>({label:c.nome,backgroundColor:c.cor,borderRadius:3,data:meses.map(m=>soma(doAno.filter(t=>t.mes===m&&(t.cat||'')===c.id)))})).filter(d=>d.data.some(v=>v))},
+    options:{...base,scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:fm}}},plugins:{tooltip:{callbacks:{label:c=>c.dataset.label+': '+fm(c.parsed.y)}}}}});
+  const anos=[...new Set(todas.map(t=>t.mes.slice(0,4)))].sort();
+  mk('chAnos',{type:'bar',data:{labels:anos,datasets:[{data:anos.map(a=>soma(todas.filter(t=>t.mes.startsWith(a)))),backgroundColor:'#6366F1',borderRadius:6}]},
+    options:{...base,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fm(c.parsed.y)}}},scales:{x:{grid:{display:false}},y:{ticks:{callback:fm}}}}});
+  const porCat=cats.map(c=>({c,v:soma(doAno.filter(t=>(t.cat||'')===c.id))})).filter(x=>x.v>0);
+  mk('chCats',{type:'doughnut',data:{labels:porCat.map(x=>x.c.nome),datasets:[{data:porCat.map(x=>x.v),backgroundColor:porCat.map(x=>x.c.cor),borderWidth:0}]},
+    options:{...base,cutout:'62%',plugins:{legend:{position:'right'},tooltip:{callbacks:{label:c=>c.label+': '+fm(c.parsed)}}}}});
+  const g={};doAno.forEach(t=>{const k=(t.estab||'').trim()||'—';g[k]=(g[k]||0)+anaValor(t);});
+  const top=Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  mk('chTop',{type:'bar',data:{labels:top.map(x=>x[0]),datasets:[{data:top.map(x=>x[1]),backgroundColor:'#F59E0B',borderRadius:5}]},
+    options:{...base,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fm(c.parsed.x)}}},scales:{y:{grid:{display:false}},x:{ticks:{callback:fm}}}}});
+}
+
 /* ── RELÓGIO ── */
 const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function atualizarRelogio(){
@@ -1479,6 +1604,7 @@ setInterval(atualizarRelogio,1000);
 
 /* ── INIT ── */
 function init(){
+  document.getElementById('transCategoria').innerHTML=optsCat('');
   const vigente=mesVigente();
   if(!state.meses.includes(vigente)) state.meses.push(vigente);
   state.mes=vigente;
@@ -1486,7 +1612,7 @@ function init(){
 }
 
 window.addEventListener('load',()=>{
-  atualizarRelogio();
+  atualizarRelogio();aplicarTema(document.documentElement.dataset.theme||'light');
   sbClient.auth.onAuthStateChange((event,session)=>{
     if(session){
       state.usuario=session.user.id;
@@ -1731,16 +1857,18 @@ async function processarFatura(file) {
         valor: l.valor,
         parcela_atual: l.parcela ? l.parcela.atual : null,
         total_parcelas: l.parcela ? l.parcela.total : null,
-        titular: l.titular || 'MARCELLO'
+        titular: l.titular || 'MARCELLO',
+        cat: categorizar(l.descricao)
       }));
 
     document.getElementById('importCartao').value = r.banco === 'inter' ? 'inter' : 'amex';
 
-    const permitidos = ['MARCELLO', 'JHENIPHER'];
+    const cfgTit = state.config.titulares;
+    const permitidos = (cfgTit == null ? 'MARCELLO,JHENIPHER' : cfgTit).split(',').map(x => x.trim().toUpperCase()).filter(Boolean);
     const filtroExtra = document.getElementById('importTitular').value.trim().toUpperCase();
     importDados = importDados.filter(d => {
       const tit = (d.titular || '').toUpperCase();
-      return filtroExtra ? tit.includes(filtroExtra) : permitidos.some(p => tit.includes(p));
+      return filtroExtra ? tit.includes(filtroExtra) : (!permitidos.length || permitidos.some(p => tit.includes(p)));
     });
 
     renderizarRevisao();
