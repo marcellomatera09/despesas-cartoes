@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Despesas</title>
+<title>Despesas Cartões</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("tema")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light")</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -303,6 +303,26 @@ body{font-size:14px;letter-spacing:-.005em}
 .cat-row{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--border2);font-size:13px}
 .cat-row>i{width:11px;height:11px;border-radius:50%;flex-shrink:0}
 .field input[type=color]{padding:4px;height:44px;cursor:pointer}
+.sb-logo h1{font-size:15px;white-space:nowrap}
+.ver-badge{border:0;background:var(--accent-soft);color:var(--accent);font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;cursor:pointer;font-family:inherit;margin-top:2px}
+.ver-badge:hover{filter:brightness(.95)}
+.sb-meta{padding:0 20px 12px;font-size:12px;color:var(--sidebar-dim);line-height:1.5}
+.sb-meta b{color:var(--sidebar-text);font-weight:600}
+.sb-meta .clock{text-align:left;font-size:11.5px;color:var(--sidebar-dim)}
+.sb-meta .clock b{color:var(--sidebar-text)}
+.sb-new{padding:4px 14px 6px}
+.btn-new{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:0;border-radius:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:13.5px;font-family:inherit;cursor:pointer;box-shadow:0 10px 22px rgba(99,102,241,.42);transition:transform .15s,box-shadow .15s}
+.btn-new:hover{transform:translateY(-1px);box-shadow:0 14px 28px rgba(99,102,241,.5)}
+#mesesList{--card-cor:var(--accent);--card-soft:var(--accent-soft)}
+#mesesList[data-c=inter]{--card-cor:var(--inter-color);--card-soft:rgba(255,107,0,.11)}
+#mesesList[data-c=amex]{--card-cor:#64748B;--card-soft:rgba(100,116,139,.15)}
+[data-theme=dark] #mesesList[data-c=amex]{--card-cor:#A8B0BF}
+#mesesList .nav-item.active{background:var(--card-soft);color:var(--card-cor)}
+#mesesList .mes-dot.on{background:var(--card-cor)}
+.ver-item{padding:12px 0;border-bottom:1px solid var(--border2)}
+.ver-item ul{margin:8px 0 0 18px;font-size:12.5px;color:var(--text2);line-height:1.65}
+@media(max-width:768px){.sb-meta{display:none}.sb-new{padding:4px 8px 6px}.btn-new{padding:11px 0}}
+.btn-new .nav-label{flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -322,7 +342,9 @@ body{font-size:14px;letter-spacing:-.005em}
 <!-- LAYOUT -->
 <div id="mainLayout" class="layout hidden">
   <div class="sidebar">
-    <div class="sb-logo"><h1>Despesas</h1><p>Cartões</p></div>
+    <div class="sb-logo"><h1>Despesas Cartões</h1><p><button class="ver-badge" id="appVersao" onclick="abrirVersao()" title="Ver novidades">V2.0</button></p></div>
+    <div class="sb-meta"><div>Olá, <b id="userNomeTop"></b></div><div id="relogio" class="clock"></div></div>
+    <div class="sb-new"><button class="btn-new" onclick="abrirNovaTransacao()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span class="nav-label">Nova despesa</span></button></div>
     <div class="sb-nav">
       <div class="sb-section">
         <div class="sb-section-title">Cartões</div>
@@ -343,9 +365,6 @@ body{font-size:14px;letter-spacing:-.005em}
         <div class="sb-section-title">Menu</div>
         <div class="nav-item" onclick="abrirAnalises()">
           <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="nav-label">Análises</span>
-        </div>
-        <div class="nav-item" onclick="abrirNovaTransacao()">
-          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span><span class="nav-label">Nova despesa</span>
         </div>
         <div class="nav-item" onclick="abrirImportarFatura()">
           <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9.5 13.5 12 11l2.5 2.5"/></svg></span><span class="nav-label">Importar Fatura</span>
@@ -373,7 +392,7 @@ body{font-size:14px;letter-spacing:-.005em}
   <div class="main">
     <div class="topbar">
       <h1 id="headerTitle">Dashboard</h1>
-      <div style="display:flex;align-items:center;gap:14px"><button class="btn btn-sm" id="btnTema" onclick="alternarTema()">☾ Escuro</button><div id="relogio" class="clock"></div></div>
+      <button class="btn btn-sm" id="btnTema" onclick="alternarTema()">☾ Escuro</button>
     </div>
     <div class="content" id="mainContent"></div>
   </div>
@@ -501,6 +520,15 @@ body{font-size:14px;letter-spacing:-.005em}
     <button class="btn btn-dark" onclick="adicionarCategoria()" style="width:100%">Adicionar categoria</button>
     <div id="catLista" style="margin-top:14px;max-height:260px;overflow-y:auto"></div>
     <div class="modal-footer"><button class="btn" onclick="fecharModal('categoriasModal')">Fechar</button></div>
+  </div>
+</div>
+
+<!-- MODAL VERSÃO -->
+<div id="versaoModal" class="modal">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-title">Novidades</div>
+    <div id="versaoLista" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="modal-footer"><button class="btn" onclick="fecharModal('versaoModal')">Fechar</button></div>
   </div>
 </div>
 
@@ -784,6 +812,7 @@ function renderMeses(){
   }
   depois.forEach(id=>{html+=renderMesItem(id);});
   document.getElementById('mesesList').innerHTML=html;
+  document.getElementById('mesesList').dataset.c=state.cartao;
 }
 function renderMesItem(id){
   const d=new Date(id+'-15');
@@ -814,7 +843,7 @@ function selecionarCartao(c){
   state.cartao=c;
   document.getElementById('navInter').classList.toggle('active',c==='inter');
   document.getElementById('navAmex').classList.toggle('active',c==='amex');
-  renderDashboard();
+  renderMeses();renderDashboard();
 }
 function selecionarCartaoDir(c){selecionarCartao(c);}
 
@@ -1767,6 +1796,21 @@ function removerCategoria(id){
   salvarDados();renderCategorias();atualizarSelectCategoria();renderDashboard();
 }
 function atualizarSelectCategoria(){const el=document.getElementById('transCategoria');const v=el.value;el.innerHTML=optsCat('');el.value=v;}
+/* ── VERSÃO ── (a cada mudança: aumentar APP_VERSAO e acrescentar uma entrada no topo de APP_CHANGELOG; só vai para 3.0 em mudança brusca) */
+const APP_VERSAO='2.0';
+const APP_CHANGELOG=[
+ {v:'2.0',data:'12/10/2026',itens:[
+  'Novo visual, com tema claro e escuro',
+  'Importação de fatura em PDF (Bradesco/Amex e Inter), sem API paga',
+  'Parcelas futuras lançadas nos meses seguintes + botão "Completar parcelas"',
+  'Categorias (padrão e personalizadas) e aba Análises com gráficos',
+  '"Nova despesa" em destaque, nome/data/hora no topo e meses com a cor do cartão'
+ ]}
+];
+function abrirVersao(){
+  document.getElementById('versaoLista').innerHTML=APP_CHANGELOG.map(r=>'<div class="ver-item"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:14px">V'+r.v+'</b><span style="font-size:11px;color:var(--text3)">'+r.data+'</span></div><ul>'+r.itens.map(i=>'<li>'+i+'</li>').join('')+'</ul></div>').join('');
+  document.getElementById('versaoModal').classList.add('active');
+}
 /* ── RELÓGIO ── */
 const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function atualizarRelogio(){
@@ -1775,7 +1819,7 @@ function atualizarRelogio(){
   const dia=diasSemana[n.getDay()];
   const data=String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0');
   const hora=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
-  el.innerHTML=`<b>${dia}, ${data}</b><br>${hora}`;
+  el.innerHTML=`${dia}, ${data} · <b>${hora}</b>`;
 }
 setInterval(atualizarRelogio,1000);
 
@@ -1790,11 +1834,13 @@ function init(){
 
 window.addEventListener('load',()=>{
   atualizarRelogio();aplicarTema(document.documentElement.dataset.theme||'light');
+  {const v=document.getElementById('appVersao');if(v)v.textContent='V'+APP_VERSAO;}
   sbClient.auth.onAuthStateChange((event,session)=>{
     if(session){
       state.usuario=session.user.id;
       state.email=session.user.email;
       document.getElementById('userEmail').textContent=session.user.email.split('@')[0];
+      {const n=session.user.email.split('@')[0];document.getElementById('userNomeTop').textContent=n.charAt(0).toUpperCase()+n.slice(1);}
       document.getElementById('loginPage').classList.remove('active');
       document.getElementById('mainLayout').classList.remove('hidden');
       carregarDados();corrigirMesesExistentes();init();
