@@ -300,6 +300,9 @@ body{font-size:14px;letter-spacing:-.005em}
 .grupo-header{padding:14px}.grupo-suas{display:none}.grupo-total{font-size:14px}
 .topbar h1{font-size:18px}
 }
+.cat-row{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--border2);font-size:13px}
+.cat-row>i{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.field input[type=color]{padding:4px;height:44px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -349,6 +352,9 @@ body{font-size:14px;letter-spacing:-.005em}
         </div>
         <div class="nav-item" onclick="completarParcelasFuturas()">
           <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></span><span class="nav-label">Completar parcelas</span>
+        </div>
+        <div class="nav-item" onclick="abrirCategorias()">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg></span><span class="nav-label">Categorias</span>
         </div>
         <div class="nav-item" onclick="abrirPessoas()">
           <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17.5 14c2.5 0 4.5 2 4.5 5"/></svg></span><span class="nav-label">Pessoas</span>
@@ -415,7 +421,7 @@ body{font-size:14px;letter-spacing:-.005em}
       </div>
     </div>
     <div class="field"><label>Observação</label><input type="text" id="transObs" placeholder="Opcional..."></div>
-    <div class="field"><label>Categoria (opcional)</label><select id="transCategoria"></select></div>
+    <div class="field"><label>Categoria (opcional) <a href="#" onclick="abrirCategorias();return false" style="text-transform:none;letter-spacing:0;color:var(--accent);font-weight:600;margin-left:6px">+ nova</a></label><select id="transCategoria"></select></div>
 
     <!-- DIMENSÃO 1: TIPO DE REPETIÇÃO -->
     <div style="font-size:11px;font-weight:600;color:var(--text2);margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px">Frequência</div>
@@ -479,6 +485,22 @@ body{font-size:14px;letter-spacing:-.005em}
       <button class="btn" onclick="fecharModal('transacaoModal')">Cancelar</button>
       <button class="btn btn-dark" onclick="salvarTransacao()">Salvar</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL CATEGORIAS -->
+<div id="categoriasModal" class="modal">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-title">Categorias</div>
+    <div class="row2">
+      <div class="field"><label>Nome</label><input type="text" id="catNome" placeholder="Ex.: Pets" onkeydown="if(event.key==='Enter')adicionarCategoria()"></div>
+      <div class="field"><label>Cor</label><input type="color" id="catCor" value="#14B8A6"></div>
+    </div>
+    <div class="field"><label>Palavras-chave (opcional)</label><input type="text" id="catPalavras" placeholder="petz, cobasi, veterinar"></div>
+    <div class="info-pill">Com palavras-chave, despesas com esses nomes são classificadas sozinhas, na importação e no botão "Sugerir categorias" das Análises.</div>
+    <button class="btn btn-dark" onclick="adicionarCategoria()" style="width:100%">Adicionar categoria</button>
+    <div id="catLista" style="margin-top:14px;max-height:260px;overflow-y:auto"></div>
+    <div class="modal-footer"><button class="btn" onclick="fecharModal('categoriasModal')">Fechar</button></div>
   </div>
 </div>
 
@@ -602,7 +624,8 @@ function salvarDados(){
   if(!state.usuario){console.error('usuario vazio');return}
   localStorage.setItem('despesas_'+state.usuario,JSON.stringify({
     transacoes:state.transacoes,pessoas:state.pessoas,
-    config:state.config,fechamentos:state.fechamentos,meses:state.meses
+    config:state.config,fechamentos:state.fechamentos,meses:state.meses,
+    categoriasExtras:state.categoriasExtras||[]
   }));
 }
 function carregarDados(){
@@ -614,7 +637,9 @@ function carregarDados(){
     state.config=d.config||{inter:5,amex:28};
     state.fechamentos=d.fechamentos||{};
     state.meses=d.meses||gerarMesesPadrao();
+    state.categoriasExtras=d.categoriasExtras||[];
   } else {
+    state.categoriasExtras=[];
     state.meses=gerarMesesPadrao();
   }
   renderPessoasSelect();
@@ -1611,7 +1636,7 @@ function _pdf(mes,mesLabel){
 }
 
 /* ── CATEGORIAS ── */
-const CATEGORIAS=[
+const CATEGORIAS_BASE=[
  {id:'alimentacao',nome:'Alimentação',cor:'#F59E0B',re:/ifood|ifd\*|restaurante|pizzaria|padaria|cafe|hortifruti|mambo|supermerc|boteco|burger|pecorino|confeit|gastronom|lanche/i},
  {id:'transporte',nome:'Transporte',cor:'#3B82F6',re:/uber|99app|posto de|combust|estacionamento|dollar rac|localiza/i},
  {id:'viagem',nome:'Viagem',cor:'#06B6D4',re:/airbnb|gol linhas|latam|booking|hotel|hoteis|visto|decolar|jim\.com/i},
@@ -1621,8 +1646,19 @@ const CATEGORIAS=[
  {id:'casa',nome:'Casa',cor:'#F97316',re:/lighting|leroy|telhanorte|condominio|energia/i},
  {id:'educacao',nome:'Educação',cor:'#EC4899',re:/faculdade|curso|escola|editora|udemy|alura/i}
 ];
-function categorizar(estab){const c=CATEGORIAS.find(c=>c.re.test(estab||''));return c?c.id:'';}
-function optsCat(sel){return '<option value="">Sem categoria</option>'+CATEGORIAS.map(c=>'<option value="'+c.id+'"'+(c.id===sel?' selected':'')+'>'+c.nome+'</option>').join('');}
+const esc=x=>String(x).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function listaCats(){
+  const extras=(state.categoriasExtras||[]).map(c=>{
+    const ws=(c.palavras||'').split(',').map(x=>x.trim()).filter(Boolean).map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+    return {...c,custom:true,re:ws.length?new RegExp(ws.join('|'),'i'):null};
+  });
+  return [...CATEGORIAS_BASE,...extras];
+}
+function categorizar(estab){
+  const l=listaCats(),ord=[...l.filter(c=>c.custom),...l.filter(c=>!c.custom)];   // as suas têm prioridade
+  const c=ord.find(c=>c.re&&c.re.test(estab||''));return c?c.id:'';
+}
+function optsCat(sel){return '<option value="">Sem categoria</option>'+listaCats().map(c=>'<option value="'+c.id+'"'+(c.id===sel?' selected':'')+'>'+esc(c.nome)+'</option>').join('');}
 function sugerirCategoria(){const el=document.getElementById('transCategoria');if(!el.value)el.value=categorizar(document.getElementById('transEstab').value);}
 function sugerirCategoriasLote(){
   const alvo=state.transacoes.filter(t=>!t.cat&&categorizar(t.estab));
@@ -1676,7 +1712,7 @@ function desenharAnalises(){
   const ano=anaFiltro.ano;
   const todas=state.transacoes.filter(t=>t.mes&&(anaFiltro.cartao==='todos'||t.cartao===anaFiltro.cartao));
   const doAno=todas.filter(t=>t.mes.startsWith(ano));
-  const cats=[...CATEGORIAS,{id:'',nome:'Sem categoria',cor:'#9CA3AF'}];
+  const cats=[...listaCats(),{id:'',nome:'Sem categoria',cor:'#9CA3AF'}];
   const fm=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
   const soma=a=>a.reduce((s,t)=>s+anaValor(t),0);
   const base={responsive:true,maintainAspectRatio:false};
@@ -1696,7 +1732,41 @@ function desenharAnalises(){
     options:{...base,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fm(c.parsed.x)}}},scales:{y:{grid:{display:false}},x:{ticks:{callback:fm}}}}});
 }
 
-function catPill(id){const c=CATEGORIAS.find(x=>x.id===id);return c?'<span class="cat-pill"><i style="background:'+c.cor+'"></i>'+c.nome+'</span>':'';}
+function catPill(id){const c=listaCats().find(x=>x.id===id);return c?'<span class="cat-pill"><i style="background:'+c.cor+'"></i>'+esc(c.nome)+'</span>':'';}
+/* ── GERENCIAR CATEGORIAS ── */
+const PALETA=['#14B8A6','#E11D48','#84CC16','#A855F7','#0EA5E9','#F43F5E','#EAB308','#64748B'];
+function abrirCategorias(){
+  document.getElementById('catNome').value='';document.getElementById('catPalavras').value='';
+  document.getElementById('catCor').value=PALETA[(state.categoriasExtras||[]).length%PALETA.length];
+  renderCategorias();document.getElementById('categoriasModal').classList.add('active');
+}
+function renderCategorias(){
+  const uso=id=>state.transacoes.filter(t=>t.cat===id).length;
+  const linha=c=>'<div class="cat-row"><i style="background:'+c.cor+'"></i><div style="flex:1;min-width:0"><div style="font-weight:600">'+esc(c.nome)+'</div>'
+    +(c.custom&&c.palavras?'<div style="font-size:11px;color:var(--text2)">'+esc(c.palavras)+'</div>':'')+'</div>'
+    +'<span style="font-size:11px;color:var(--text3);white-space:nowrap">'+uso(c.id)+(uso(c.id)===1?' despesa':' despesas')+'</span>'
+    +(c.custom?'<button class="del-btn" title="Remover" onclick="removerCategoria(\''+c.id+'\')">&#10005;</button>':'<span style="width:28px"></span>')+'</div>';
+  const l=listaCats();
+  document.getElementById('catLista').innerHTML=[...l.filter(c=>c.custom),...l.filter(c=>!c.custom)].map(linha).join('');
+}
+function adicionarCategoria(){
+  const nome=document.getElementById('catNome').value.trim();
+  if(!nome){alert('Digite o nome da categoria');return}
+  if(listaCats().some(c=>c.nome.toLowerCase()===nome.toLowerCase())){alert('Já existe uma categoria com esse nome');return}
+  (state.categoriasExtras=state.categoriasExtras||[]).push({id:'c'+Date.now(),nome,cor:document.getElementById('catCor').value,palavras:document.getElementById('catPalavras').value.trim()});
+  salvarDados();
+  document.getElementById('catNome').value='';document.getElementById('catPalavras').value='';
+  document.getElementById('catCor').value=PALETA[state.categoriasExtras.length%PALETA.length];
+  renderCategorias();atualizarSelectCategoria();
+}
+function removerCategoria(id){
+  const n=state.transacoes.filter(t=>t.cat===id).length;
+  if(!confirm('Remover esta categoria?'+(n?' As '+n+' despesas dela ficarão sem categoria.':'')))return;
+  state.transacoes.forEach(t=>{if(t.cat===id)t.cat=undefined;});
+  state.categoriasExtras=(state.categoriasExtras||[]).filter(c=>c.id!==id);
+  salvarDados();renderCategorias();atualizarSelectCategoria();renderDashboard();
+}
+function atualizarSelectCategoria(){const el=document.getElementById('transCategoria');const v=el.value;el.innerHTML=optsCat('');el.value=v;}
 /* ── RELÓGIO ── */
 const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function atualizarRelogio(){
