@@ -197,6 +197,109 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
   .sb-logo h1{font-size:11px}
   .cartao-grid{grid-template-columns:1fr 1fr}
 }
+
+/* ── REDESIGN 2026 ── */
+:root{--accent:#6366F1;--accent2:#8B5CF6;--accent-soft:rgba(99,102,241,.10);--hover:rgba(15,23,42,.045);--bg:#F3F4F9;--surface:#fff;--surface2:#F7F8FC;--border:#E7E9F1;--border2:#EEF0F6;--sidebar:#fff;--sidebar-text:#1E2230;--sidebar-dim:#6B7280;--radius:18px;--shadow:0 1px 2px rgba(20,24,40,.04),0 4px 16px rgba(20,24,40,.05);--shadow-md:0 12px 32px rgba(20,24,40,.12)}
+[data-theme=dark]{--bg:#0A0B10;--surface:#12141B;--surface2:#181B24;--border:#222632;--border2:#1C202A;--sidebar:#0D0F15;--sidebar-text:#E6E8EE;--sidebar-dim:#7D8494;--hover:rgba(255,255,255,.05);--accent-soft:rgba(129,140,248,.16);--shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.25);--shadow-md:0 16px 40px rgba(0,0,0,.55)}
+body{font-size:14px;letter-spacing:-.005em}
+.main{background:radial-gradient(900px 360px at 85% -8%,rgba(99,102,241,.12),transparent 70%),var(--bg)}
+.sidebar{background:var(--sidebar);border-right:1px solid var(--border);width:236px}
+.sb-logo{display:grid;grid-template-columns:36px 1fr;column-gap:11px;align-items:center;padding:22px 18px 14px;border-bottom:0}
+.sb-logo::before{content:"";grid-row:1/3;width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 18px rgba(99,102,241,.40)}
+.sb-logo h1{color:var(--text);font-size:16px;font-weight:700;letter-spacing:-.02em}
+.sb-logo p{color:var(--sidebar-dim);font-size:11px}
+.sb-section-title{padding:16px 20px 6px;font-size:10.5px;letter-spacing:.9px}
+.nav-item{margin:2px 10px;padding:9px 12px;border-radius:10px;border-left:0;font-size:13px;font-weight:500;color:var(--sidebar-dim);gap:11px}
+.nav-item:hover{background:var(--hover);color:var(--sidebar-text)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);border-left:0;font-weight:600}
+.nav-item.inter.active{background:rgba(255,107,0,.10);color:var(--inter-color)}
+.nav-item.amex.active{background:rgba(100,116,139,.14);color:var(--sidebar-text)}
+.nav-icon svg{width:17px;height:17px;display:block}
+.edit-btn:hover{background:var(--hover)}
+.sb-user{border-top:1px solid var(--border)}
+.sb-user:hover{background:var(--hover)}
+.avatar{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px}
+.user-name{color:var(--sidebar-text)}
+.mes-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--border);margin:0 5px}
+.mes-dot.on{background:var(--accent)}
+.topbar{height:70px;padding:0 28px;background:transparent;border-bottom:0;backdrop-filter:none;position:static}
+.topbar h1{font-size:22px;font-weight:700;letter-spacing:-.03em}
+.content{padding:2px 28px 32px}
+#btnTema{border-radius:999px;padding:8px 14px}
+.hero-row{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin-bottom:16px}
+.hero{position:relative;overflow:hidden;border-radius:22px;padding:24px 26px;color:#fff;background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 55%,#A855F7 100%);box-shadow:0 18px 40px rgba(99,102,241,.32)}
+.hero.inter{background:linear-gradient(135deg,#FF6B00 0%,#FF8A3D 60%,#FFB36B 100%);box-shadow:0 18px 40px rgba(255,107,0,.28)}
+.hero.amex{background:linear-gradient(135deg,#1F2937 0%,#374151 55%,#52606F 100%);box-shadow:0 18px 40px rgba(17,24,39,.32)}
+.hero::after{content:"";position:absolute;right:-60px;top:-80px;width:260px;height:260px;border-radius:50%;background:rgba(255,255,255,.12)}
+.hero::before{content:"";position:absolute;right:70px;bottom:-120px;width:230px;height:230px;border-radius:50%;background:rgba(255,255,255,.07)}
+.hero>*{position:relative;z-index:1}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.hero-eyebrow{font-size:12px;font-weight:600;opacity:.9;letter-spacing:.5px;text-transform:uppercase}
+.hero-sub{font-size:12px;opacity:.8;margin-top:2px}
+.hero-total{font-size:42px;font-weight:700;letter-spacing:-.04em;margin:18px 0 2px;font-variant-numeric:tabular-nums}
+.hero-stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.hero-chip{background:rgba(255,255,255,.16);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:8px 13px;font-size:11px}
+.hero-chip b{display:block;font-size:14px;font-weight:700;margin-top:1px}
+.hero-actions{display:flex;gap:6px;flex-wrap:wrap}
+.hero-actions .btn{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.28);padding:6px 13px;font-size:11px}
+.hero-actions .btn:hover{background:rgba(255,255,255,.28)}
+.cards-col{display:grid;gap:12px;grid-template-rows:1fr 1fr}
+.tile{border-radius:18px;padding:16px 18px;cursor:pointer;background:var(--surface);border:1.5px solid var(--border);box-shadow:var(--shadow);transition:.18s;display:flex;flex-direction:column;justify-content:space-between}
+.tile:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.tile.inter.on{border-color:var(--inter-color);box-shadow:0 0 0 4px rgba(255,107,0,.13)}
+.tile.amex.on{border-color:#64748B;box-shadow:0 0 0 4px rgba(100,116,139,.18)}
+.tile-top{display:flex;align-items:center;justify-content:space-between}
+.tile-name{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.tile-name i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.tile-total{font-size:24px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tile-sub{font-size:11px;color:var(--text2)}
+.grupo{border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px}
+.grupo-header{padding:16px 20px}
+.grupo-dot{width:10px;height:10px}
+.grupo-titulo{font-size:14px;font-weight:650}
+.grupo-badge{font-size:11px;padding:2px 9px}
+.grupo-total{font-size:15px}
+.tabela th{background:transparent;padding:8px 20px;font-size:10.5px}
+.tabela td{padding:12px 20px;border-bottom:1px solid var(--border2)}
+.tabela tr:hover td{background:var(--hover)}
+.t-estab{font-weight:600;font-size:13.5px}
+.t-valor{font-size:14px}
+.cat-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:2px 9px 2px 7px;border-radius:999px;margin-left:8px;vertical-align:1px}
+.cat-pill i{width:7px;height:7px;border-radius:50%;display:inline-block}
+.badge{padding:2px 9px}
+.btn{border-radius:999px;padding:8px 16px;font-weight:600}
+.btn-dark{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;color:#fff;box-shadow:0 6px 16px rgba(99,102,241,.35)}
+.btn-sm{padding:6px 12px}
+.card{border-radius:var(--radius);box-shadow:var(--shadow)}
+.modal{backdrop-filter:blur(6px);background:rgba(8,10,20,.5)}
+.modal-box{border-radius:22px;padding:24px;box-shadow:var(--shadow-md)}
+.modal-title{font-size:18px;letter-spacing:-.02em}
+.field input,.field select,.field textarea{background:var(--surface2);border:1.5px solid transparent;border-radius:12px;padding:11px 13px}
+.field input:focus,.field select:focus,.field textarea:focus{background:var(--surface);border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.tipo-pill{border-radius:12px}
+.login-wrap{background:radial-gradient(900px 500px at 15% 10%,rgba(99,102,241,.5),transparent 60%),radial-gradient(700px 500px at 90% 95%,rgba(168,85,247,.4),transparent 60%),#0A0B10}
+.login-box{border-radius:26px;padding:40px}
+.lbtn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;color:#fff}
+.lbtn.secondary{border-radius:12px}
+.import-row{grid-template-columns:80px 1fr 90px 64px 130px}
+@media(max-width:900px){.hero-row{grid-template-columns:1fr}.cards-col{grid-template-columns:1fr 1fr;grid-template-rows:auto}}
+@media(max-width:768px){.sidebar{width:62px}.sb-logo{grid-template-columns:36px;justify-items:center;padding:18px 0 10px}.sb-logo h1,.sb-logo p{display:none}.nav-item{margin:2px 8px;justify-content:center;padding:10px}.topbar{padding:0 16px}.content{padding:2px 14px 24px}.hero-total{font-size:32px}.clock{display:none}.tabela td,.tabela th{padding:10px 12px}}
+.tabela{table-layout:fixed}
+.tabela th:nth-child(1){width:112px}.tabela th:nth-child(3){width:140px}.tabela th:nth-child(4){width:190px}.tabela th:nth-child(5){width:84px}
+.tabela td:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-logo::before{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='3'/%3E%3Cpath d='M3 10h18M7 15h3'/%3E%3C/svg%3E") center/19px no-repeat,linear-gradient(135deg,var(--accent),var(--accent2))}
+@media(max-width:768px){.tabela th:nth-child(4),.tabela td:nth-child(4){display:none}.tabela th:nth-child(1){width:84px}.tabela th:nth-child(3){width:104px}.tabela th:nth-child(5){width:64px}}
+.hero-row>*,.tile,.cards-col{min-width:0}
+@media(max-width:768px){
+.tabela th:nth-child(1),.tabela td:nth-child(1),.tabela th:nth-child(4),.tabela td:nth-child(4){display:none}
+.tabela th:nth-child(3){width:104px}.tabela th:nth-child(5){width:70px}
+.tabela td:nth-child(2){white-space:normal}
+.cat-pill{display:none}
+.tile{padding:12px 14px}.tile-total{font-size:19px;white-space:nowrap}.tile-top .tile-sub{display:none}
+.hero{padding:20px}.hero-total{font-size:30px}.hero-chip{padding:7px 10px}
+.grupo-header{padding:14px}.grupo-suas{display:none}.grupo-total{font-size:14px}
+.topbar h1{font-size:18px}
+}
 </style>
 </head>
 <body>
@@ -236,22 +339,22 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
       <div class="sb-section">
         <div class="sb-section-title">Menu</div>
         <div class="nav-item" onclick="abrirAnalises()">
-          <span class="nav-icon">&#128202;</span><span class="nav-label">Análises</span>
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="nav-label">Análises</span>
         </div>
         <div class="nav-item" onclick="abrirNovaTransacao()">
-          <span class="nav-icon">＋</span><span class="nav-label">Nova despesa</span>
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span><span class="nav-label">Nova despesa</span>
         </div>
         <div class="nav-item" onclick="abrirImportarFatura()">
-          <span class="nav-icon">&#128196;</span><span class="nav-label">Importar Fatura</span>
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 17v-6M9.5 13.5 12 11l2.5 2.5"/></svg></span><span class="nav-label">Importar Fatura</span>
         </div>
         <div class="nav-item" onclick="completarParcelasFuturas()">
-          <span class="nav-icon">&#10140;</span><span class="nav-label">Completar parcelas</span>
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg></span><span class="nav-label">Completar parcelas</span>
         </div>
         <div class="nav-item" onclick="abrirPessoas()">
-          <span class="nav-icon">👥</span><span class="nav-label">Pessoas</span>
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17.5 14c2.5 0 4.5 2 4.5 5"/></svg></span><span class="nav-label">Pessoas</span>
         </div>
         <div class="nav-item" onclick="abrirConfig()">
-          <span class="nav-icon">⚙</span><span class="nav-label">Config</span>
+          <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg></span><span class="nav-label">Config</span>
         </div>
       </div>
     </div>
@@ -663,7 +766,7 @@ function renderMesItem(id){
   const ativo=state.mes===id;
   const temTrans=state.transacoes.some(t=>t.mes===id);
   return `<div class="nav-item ${ativo?'active':''}" onclick="selecionarMes('${id}')">
-    <span class="nav-icon">${mesesNomes[d.getMonth()]}</span>
+    <span class="nav-icon"><i class="mes-dot ${temTrans?'on':''}"></i></span>
     <span class="nav-label">${label}</span>
     <span class="nav-actions">
       <button class="edit-btn" onclick="abrirFechamento('${id}',event)">✏</button>
@@ -731,10 +834,9 @@ function renderDashboard(){
     const minhas=tr.reduce((s,t)=>s+(t.valor*(t.percentMeu||100)/100),0);
     const corC=c==='inter'?'var(--inter-color)':'var(--amex-color)';
     const cls=state.cartao===c?'active-'+c:'';
-    return `<div class="cartao-card ${cls}" onclick="selecionarCartaoDir('${c}')">
-      <div class="cartao-name" style="color:${corC}">${c.toUpperCase()}</div>
-      <div class="cartao-total">${fmt(total)}</div>
-      <div class="cartao-sub">Suas: ${fmt(minhas)}</div>
+    return `<div class="tile ${c} ${state.cartao===c?'on':''}" onclick="selecionarCartaoDir('${c}')">
+      <div class="tile-top"><div class="tile-name" style="color:${corC}"><i style="background:${corC}"></i>${c==='amex'?'AMEX':'Inter'}</div><div class="tile-sub">${tr.length} lançamentos</div></div>
+      <div><div class="tile-total">${fmt(total)}</div><div class="tile-sub">Suas: ${fmt(minhas)}</div></div>
     </div>`;
   }).join('');
 
@@ -760,20 +862,24 @@ function renderDashboard(){
     </div>`:'';
 
   document.getElementById('mainContent').innerHTML=`
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div style="font-size:14px;font-weight:700;letter-spacing:-.2px">${mesLabel.charAt(0).toUpperCase()+mesLabel.slice(1)}</div>
-          ${fech?`<div style="font-size:11px;color:var(--text2);margin-top:2px">Fecha dia ${fech}</div>`:''}
+    <div class="hero-row">
+      <div class="hero ${state.cartao}">
+        <div class="hero-top">
+          <div><div class="hero-eyebrow">Fatura ${state.cartao==='inter'?'Inter':'AMEX'}</div>${fech?`<div class="hero-sub">Fecha dia ${fech}</div>`:''}</div>
+          <div class="hero-actions">
+            <button class="btn btn-sm" onclick="gerarFatura('${state.cartao}')">Baixar fatura</button>
+            <button class="btn btn-sm" onclick="gerarRelatorio()">Relatório</button>
+          </div>
         </div>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-sm" onclick="gerarFatura('inter')" style="color:var(--inter-color);border-color:var(--inter-color)">&#128203; Fatura Inter</button>
-          <button class="btn btn-sm" onclick="gerarFatura('amex')" style="color:var(--amex-color);border-color:var(--amex-color)">&#128203; Fatura AMEX</button>
-          <button class="btn btn-sm" onclick="gerarRelatorio()">&#128196; Relatório</button>
+        <div class="hero-total">${fmt(totalGeral)}</div>
+        <div class="hero-stats">
+          <div class="hero-chip">Suas<b>${fmt(minhasGeral)}</b></div>
+          ${totalGeral-minhasGeral-totalTerceiros>0.005?`<div class="hero-chip">Deles<b>${fmt(totalGeral-minhasGeral-totalTerceiros)}</b></div>`:''}
+          ${totalTerceiros>0?`<div class="hero-chip">Terceiros<b>${fmt(totalTerceiros)}</b></div>`:''}
+          <div class="hero-chip">Lançamentos<b>${todas.length}</b></div>
         </div>
       </div>
-      <div class="cartao-grid">${cartoesHtml}</div>
-      ${resumoBar}
+      <div class="cards-col">${cartoesHtml}</div>
     </div>
     ${grupoHtml('Rateadas','var(--rateada)','rgba(139,92,246,.12)',rateadas)}
     ${grupoHtml('Parceladas','var(--parcelada)','rgba(59,130,246,.12)',parceladas)}
@@ -828,7 +934,7 @@ function tabelaRows(trans){
     if(t.tipo==='recorrente')info=`<span class="badge badge-rec">↺ recorrente</span>`;
     return `<tr>
       <td class="t-data">${dt}</td>
-      <td><div class="t-estab">${t.estab||''}</div>${obs}</td>
+      <td><div class="t-estab">${t.estab||''}${t.cat?catPill(t.cat):''}</div>${obs}</td>
       <td class="t-valor">${fmt(t.valor)}</td>
       <td class="t-extra">${info}</td>
       <td class="t-action" style="white-space:nowrap">
@@ -1553,7 +1659,7 @@ function renderAnalises(){
       <select onchange="anaSet('ano',this.value)">${anos.length?anos.map(a=>'<option'+(a===anaFiltro.ano?' selected':'')+'>'+a+'</option>').join(''):'<option>'+hoje+'</option>'}</select>
       <label class="check-row" style="margin:0"><input type="checkbox" ${anaFiltro.minhas?'checked':''} onchange="anaSet('minhas',this.checked)"><span style="font-size:12px">Só minhas</span></label>
     </div></div>
-    ${sem?`<div class="info-pill">${sem} despesas sem categoria. <a href="#" onclick="sugerirCategoriasLote();return false" style="color:var(--blue);font-weight:600">Sugerir categorias automaticamente</a></div>`:''}
+    ${sem?`<div class="info-pill">${sem} ${sem===1?'despesa sem categoria':'despesas sem categoria'}. <a href="#" onclick="sugerirCategoriasLote();return false" style="color:var(--blue);font-weight:600">Sugerir categorias automaticamente</a></div>`:''}
     <div class="card-title" style="margin-bottom:8px">Mês a mês — ${anaFiltro.ano}</div>
     <div style="height:300px"><canvas id="chMeses"></canvas></div></div>
   <div class="ana-grid">
@@ -1590,6 +1696,7 @@ function desenharAnalises(){
     options:{...base,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fm(c.parsed.x)}}},scales:{y:{grid:{display:false}},x:{ticks:{callback:fm}}}}});
 }
 
+function catPill(id){const c=CATEGORIAS.find(x=>x.id===id);return c?'<span class="cat-pill"><i style="background:'+c.cor+'"></i>'+c.nome+'</span>':'';}
 /* ── RELÓGIO ── */
 const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function atualizarRelogio(){
